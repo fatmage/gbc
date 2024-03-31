@@ -1,0 +1,4 @@
+(executable
+ (public_name gbc)
+ (name main)
+ (libraries gbc))

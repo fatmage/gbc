@@ -1,6 +1,0 @@
-# dune init proj gbc
-# OCAMLPARAM: unset
-# Shared cache: disabled
-# Shared cache location: /home/fatmage/.cache/dune/db
-# Workspace root: /home/fatmage/UWR/thesis/gbc
-# Auto-detected concurrency: 4

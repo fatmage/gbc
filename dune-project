@@ -5,11 +5,11 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github fatmage/gbc))
 
-(authors "Author Name")
+(authors "Michał Bednarz <mi.bed2001@gmail.com>")
 
-(maintainers "Maintainer Name")
+(maintainers "Michał Bednarz <mi.bed2001@gmail.com>")
 
 (license LICENSE)
 
@@ -17,10 +17,10 @@
 
 (package
  (name gbc)
- (synopsis "A short synopsis")
- (description "A longer description")
+ (synopsis "GameBoy Caml")
+ (description "GameBoy Color emulator written in OCaml")
  (depends ocaml dune)
  (tags
-  (topics "to describe" your project)))
+  (emulator gameboy gbc gb console debugger)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

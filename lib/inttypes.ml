@@ -94,3 +94,13 @@ let u16_to_8 u16 = U8.of_int (U16.to_int u16)
 
 let u8_to_char u8 = u8 |> U8.to_int |> char_of_int
 let char_to_u8 c = c |> int_of_char |> U8.of_int
+
+let set_low_byte u16 u8 =
+  U16.logor (U16.logand u16 (U16.of_int 0xFF)) (u8_to_16 u8)
+let set_high_byte u16 u8 =
+  U16.of_int
+  (((U16.to_int u16) land 0xFF00) lor
+   ((U8.to_int u8) lsl 8))
+
+let get_high u16 = U8.of_int ((U16.to_int u16) lsr 8)
+let get_low u16 = U8.of_int ((U16.to_int u16) land 0xFF)

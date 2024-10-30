@@ -19,20 +19,20 @@ type regfile = {
 *)
 let set_r8 rf r v =
   match r with
-  | A -> { rf with _A = v }
-  | B -> { rf with _B = v }
-  | C -> { rf with _C = v }
-  | D -> { rf with _D = v }
-  | E -> { rf with _E = v }
-  | H -> { rf with _H = v }
-  | L -> { rf with _L = v }
+  | A -> { rf with _A = v; _AF = set_high_byte rf._AF v }
+  | B -> { rf with _B = v; _BC = set_high_byte rf._BC v }
+  | C -> { rf with _C = v; _BC = set_low_byte rf._BC v }
+  | D -> { rf with _D = v; _DE = set_high_byte rf._DE v }
+  | E -> { rf with _E = v; _DE = set_low_byte rf._DE v }
+  | H -> { rf with _H = v; _HL = set_high_byte rf._HL v }
+  | L -> { rf with _L = v; _HL = set_low_byte rf._HL v }
 
 let set_r16 rf rr v =
   match rr with
-  | AF -> { rf with _AF = v }
-  | BC -> { rf with _BC = v }
-  | DE -> { rf with _DE = v }
-  | HL -> { rf with _HL = v }
+  | AF -> { rf with _AF = v; _A = get_high v }
+  | BC -> { rf with _BC = v; _B = get_high v; _C = get_low v }
+  | DE -> { rf with _DE = v; _D = get_high v; _E = get_low v }
+  | HL -> { rf with _HL = v; _H = get_high v; _L = get_low v }
   | SP -> { rf with _SP = v }
   | PC -> { rf with _PC = v }
 

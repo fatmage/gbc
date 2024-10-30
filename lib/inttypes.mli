@@ -41,9 +41,14 @@ module U16 : IntType
 type uint8 = U8.t
 type uint16 = U16.t
 
-
 val u8_to_16 : U8.t -> U16.t
 val u16_to_8 : U16.t -> U8.t
 
 val u8_to_char : U8.t -> char
 val char_to_u8 : char -> U8.t
+
+val set_low_byte : U16.t -> U8.t -> U16.t
+val set_high_byte : U16.t -> U8.t -> U16.t
+
+val get_high : U16.t -> U8.t
+val get_low  : U16.t -> U8.t

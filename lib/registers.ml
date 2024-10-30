@@ -4,7 +4,6 @@ type r8  = A | B | C | D | E | H | L
 type r16 = AF | BC | DE | HL | SP | PC
 type flag = Flag_z | Flag_n | Flag_h | Flag_c
 
-
 type regfile = {
   _A : uint8; _B : uint8; _C : uint8; _D : uint8;
   _E : uint8; _H : uint8; _L : uint8;
@@ -12,11 +11,6 @@ type regfile = {
   _SP : uint16; _PC : uint16
   }
 
-
-(*
-  TODO: when changing r8 change half of some r16 and analogically,
-  when changing r16 change some r8 accordingly
-*)
 let set_r8 rf r v =
   match r with
   | A -> { rf with _A = v; _AF = set_high_byte rf._AF v }

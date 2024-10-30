@@ -24,17 +24,17 @@ let get t i =
   | _ when i < 0x8000
     -> Rom.S.get t.rom i
   | _ when i < 0xA000
-    -> Ramchunk.S.get t.vram i
+    -> Ram.EightKB.get t.vram i
   | _ when i < 0xC000
-    -> Ramchunk.S.get t.ram i
+    -> Ram.EightKB.get t.ram i
   | _ when i < 0xE000
-    -> Ramchunk.S.get t.wram i
+    -> Ram.EightKB.get t.wram i
   | _ when i >= 0xFE00 && i < 0xFEA0
     -> Oam.S.get t.oam i
   | _ when i >= 0xFF00 && i < 0xFF80
     -> Ioregs.S.get t.regio i
   | _ when i >= 0xFF80 && i < 0xFFFF
-    -> Ramchunk.S.get t.hram i
+    -> Ram.EightKB.get t.hram i
   | _ when i == 0xFFFF
     -> IEreg.S.get t.ie i
   | _
@@ -48,6 +48,6 @@ let set t i v =
   | i when i < 8192
     -> {t with rom = Rom.S.set t.rom i v}
   | i when i < 16384
-    -> {t with ram = Ramchunk.S.set t.ram (i - 8192) v}
+    -> {t with ram = Ram.EightKB.set t.ram (i - 8192) v}
   | _
     -> failwith "Bus error: address out of range."

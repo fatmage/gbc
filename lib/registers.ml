@@ -11,6 +11,13 @@ type regfile = {
   _SP : uint16; _PC : uint16
   }
 
+let initial = {
+  _A = U8.zero; _B = U8.zero; _C = U8.zero; _D = U8.zero;
+  _E = U8.zero; _H = U8.zero; _L = U8.zero;
+  _AF = U16.zero; _BC = U16.zero; _DE = U16.zero; _HL= U16.zero;
+  _SP = U16.zero; _PC = U16.zero
+}
+
 let set_r8 rf r v =
   match r with
   | A -> { rf with _A = v; _AF = set_high_byte rf._AF v }

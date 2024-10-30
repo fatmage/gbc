@@ -1,10 +1,10 @@
 open Inttypes
 
 module Oam = struct
-  module S = Ramchunk.S
+  module S = Ram.EightKB
 end
 module Ioregs = struct
-  module S = Ramchunk.S
+  module S = Ram.EightKB
 end
 module IEreg = struct
   module S : Addressable.S = struct
@@ -16,6 +16,12 @@ module IEreg = struct
   end
 end
 
-type t = { regs: Registers.regfile; rom: Rom.S.t; ram : Ramchunk.S.t;
-           wram : Ramchunk.S.t; vram : Ramchunk.S.t; hram : Ramchunk.S.t;
+type t = { regs: Registers.regfile; rom: Rom.S.t; ram : Ram.EightKB.t;
+           wram : Ram.EightKB.t; vram : Ram.EightKB.t; hram : Ram.EightKB.t;
            oam: Oam.S.t; regio: Ioregs.S.t; ie: IEreg.S.t }
+
+
+let initial =
+  {regs = Registers.initial; rom = Rom.S.empty; ram = Ram.EightKB.empty;
+  wram = Ram.EightKB.empty; vram = Ram.EightKB.empty; hram = Ram.EightKB.empty;
+  oam = Oam.S.empty; regio = Ioregs.S.empty; ie = IEreg.S.empty }

@@ -1,4 +1,3 @@
-open Inttypes
 open Registers
 
 
@@ -7,13 +6,13 @@ type instruction =
 (*             mnemonic 1st arg  2nd arg  size *)
   | NoArg of (State.t -> State.t) * int
   | R8    of (State.t -> r8 -> State.t) * int
-  | RV8   of (State.t -> r8 -> uint8 -> State.t) * int
+  | RV8   of (State.t -> r8 -> int (* u8 *) -> State.t) * int
   | RR8   of (State.t -> r8 -> r8 -> State.t) * int
   | R16   of (State.t -> r16 -> State.t) * int
-  | RV16  of (State.t -> r16 -> uint16 -> State.t) * int
+  | RV16  of (State.t -> r16 -> int (* u16 *) -> State.t) * int
   | RR16  of (State.t -> r16 -> r16 -> State.t) * int
-  | V8    of (State.t -> uint8 -> State.t) * int
-  | V16   of (State.t -> uint16 -> State.t) * int
+  | V8    of (State.t -> int (* u8 *) -> State.t) * int
+  | V16   of (State.t -> int (* u16 *) -> State.t) * int
 
 
 (** All operations as values of the algebraic type instruction **)
@@ -21,7 +20,8 @@ type instruction =
 (* TODO: change representation of instruction from gbcdis to gbc *)
 
 (* 8-bit Arithmetic and Logic Instructions *)
-(* let iADC_Ar8  = fun r -> Binary ("ADC", str_A, str_of_r8 r, 1)
+(*
+let iADC_Ar8  = fun r -> Binary ("ADC", str_A, str_of_r8 r, 1)
 let iADC_AHLp =          Binary ("ADC", str_A, strptr_of_r16 HL, 1)
 let iADC_An8  = fun n -> Binary ("ADC", str_A, str_of_int n, 2)
 let iADD_Ar8  = fun r -> Binary ("ADD", str_A, str_of_r8 r, 1)
@@ -33,10 +33,10 @@ let iAND_An8  = fun n -> Binary ("AND", str_A, str_of_int n, 2)
 let iCP_Ar8   = fun r -> Binary ("CP",  str_A, str_of_r8 r, 1)
 let iCP_AHLp  =          Binary ("CP",  str_A, strptr_of_r16 HL, 1)
 let iCP_An8   = fun n -> Binary ("CP",  str_A, str_of_int n, 2)
-let iDEC_r8   = fun r -> Unary ("DEC", str_of_r8 r, 1)
-let iDEC_HLp  =          Unary ("DEC", strptr_of_r16 HL, 1)
-let iINC_r8  = fun r ->  Unary ("INC", str_of_r8 r, 1)
-let iINC_HLp =           Unary ("INC", strptr_of_r16 HL, 1)
+let iDEC_r8   = fun r -> Unary  ("DEC", str_of_r8 r, 1)
+let iDEC_HLp  =          Unary  ("DEC", strptr_of_r16 HL, 1)
+let iINC_r8  = fun r ->  Unary  ("INC", str_of_r8 r, 1)
+let iINC_HLp =           Unary  ("INC", strptr_of_r16 HL, 1)
 let iOR_Ar8   = fun r -> Binary ("OR",  str_A, str_of_r8 r, 1)
 let iOR_AHLp  =          Binary ("OR",  str_A, strptr_of_r16 HL, 1)
 let iOR_An8   = fun n -> Binary ("OR",  str_A, str_of_int n, 2)
@@ -52,8 +52,8 @@ let iXOR_An8  = fun n -> Binary ("XOR", str_A, str_of_int n, 2)
 
 (* 16-bit Arithmetic Instructions *)
 let iADD_HLr16 = fun r -> Binary ("ADD", str_HL, str_of_r16 r, 1)
-let iDEC_r16   = fun r -> Unary ("DEC", str_of_r16 r, 1)
-let iINC_r16   = fun r -> Unary ("INC", str_of_r16 r, 1)
+let iDEC_r16   = fun r -> Unary  ("DEC", str_of_r16 r, 1)
+let iINC_r16   = fun r -> Unary  ("INC", str_of_r16 r, 1)
 
 (* Bit Operations Instructions *)
 let iBIT_u3r8  = fun u r -> Binary ("BIT", str_of_int u, str_of_r8 r, 2)
@@ -62,28 +62,28 @@ let iRES_u3r8  = fun u r -> Binary ("RES", str_of_int u, str_of_r8 r, 2)
 let iRES_u3HLp = fun u ->   Binary ("RES", str_of_int u, strptr_of_r16 HL, 2)
 let iSET_u3r8  = fun u r -> Binary ("SET", str_of_int u, str_of_r8 r, 2)
 let iSET_u3HLp = fun u ->   Binary ("SET", str_of_int u, strptr_of_r16 HL, 2)
-let iSWAP_r8   = fun r ->   Unary ("SWAP", str_of_r8 r, 2)
-let iSWAP_HLp  =            Unary ("SWAP", strptr_of_r16 HL, 2)
+let iSWAP_r8   = fun r ->   Unary  ("SWAP", str_of_r8 r, 2)
+let iSWAP_HLp  =            Unary  ("SWAP", strptr_of_r16 HL, 2)
 
 (* Bit Shift Instructions *)
-let iRL_r8   = fun r -> Unary ("RL", str_of_r8 r, 2)
-let iRL_HLp  =          Unary ("RL", strptr_of_r16 HL, 2)
+let iRL_r8   = fun r -> Unary   ("RL", str_of_r8 r, 2)
+let iRL_HLp  =          Unary   ("RL", strptr_of_r16 HL, 2)
 let iRLA     =          Nullary ("RLA", 1)
-let iRLC_r8  = fun r -> Unary ("RLC", str_of_r8 r, 2)
-let iRLC_HLp =          Unary ("RLC", strptr_of_r16 HL, 2)
+let iRLC_r8  = fun r -> Unary   ("RLC", str_of_r8 r, 2)
+let iRLC_HLp =          Unary   ("RLC", strptr_of_r16 HL, 2)
 let iRLCA    =          Nullary ("RLCA", 1)
-let iRR_r8   = fun r -> Unary ("RR", str_of_r8 r, 2)
-let iRR_HLp  =          Unary ("RR", strptr_of_r16 HL, 2)
+let iRR_r8   = fun r -> Unary   ("RR", str_of_r8 r, 2)
+let iRR_HLp  =          Unary   ("RR", strptr_of_r16 HL, 2)
 let iRRA     =          Nullary ("RRA", 1)
-let iRRC_r8  = fun r -> Unary ("RRC", str_of_r8 r, 2)
-let iRRC_HLp =          Unary ("RRC", strptr_of_r16 HL, 2)
+let iRRC_r8  = fun r -> Unary   ("RRC", str_of_r8 r, 2)
+let iRRC_HLp =          Unary   ("RRC", strptr_of_r16 HL, 2)
 let iRRCA    =          Nullary ("RRCA", 1)
-let iSLA_r8  = fun r -> Unary ("SLA", str_of_r8 r, 2)
-let iSLA_HLp =          Unary ("SLA", strptr_of_r16 HL, 2)
-let iSRA_r8  = fun r -> Unary ("SRA", str_of_r8 r, 2)
-let iSRA_HLp =          Unary ("SRA", strptr_of_r16 HL, 2)
-let iSRL_r8  = fun r -> Unary ("SRL", str_of_r8 r, 2)
-let iSRL_HLp =          Unary ("SRL", strptr_of_r16 HL, 2)
+let iSLA_r8  = fun r -> Unary   ("SLA", str_of_r8 r, 2)
+let iSLA_HLp =          Unary   ("SLA", strptr_of_r16 HL, 2)
+let iSRA_r8  = fun r -> Unary   ("SRA", str_of_r8 r, 2)
+let iSRA_HLp =          Unary   ("SRA", strptr_of_r16 HL, 2)
+let iSRL_r8  = fun r -> Unary   ("SRL", str_of_r8 r, 2)
+let iSRL_HLp =          Unary   ("SRL", strptr_of_r16 HL, 2)
 
 (* Load Instructions *)
 let iLD_rr8    = fun ra rb -> Binary ("LD", str_of_r8 ra, str_of_r8 rb, 1)
@@ -121,16 +121,16 @@ let iRST_vec   = fun n ->   Unary ("RST", str_of_int n, 1)
 (* Stack Operations Instructions *)
 let iADD_HLSP  =          Binary ("ADD", str_HL, str_SP, 1)
 let iADD_SPe8  = fun e -> Binary ("ADD", str_SP, str_of_int e, 2)
-let iDEC_SP    =          Unary ("DEC", str_SP, 1)
-let iINC_SP    =          Unary ("INC", str_SP, 1)
+let iDEC_SP    =          Unary  ("DEC", str_SP, 1)
+let iINC_SP    =          Unary  ("INC", str_SP, 1)
 let iLD_SPn16  = fun n -> Binary ("LD", str_SP, str_of_int n, 3)
 let iLD_n16pSP = fun n -> Binary ("LD", strptr_of_int n, str_SP, 3)
 let iLD_HLSPe8 = fun e -> Binary ("LD", str_HL, str_SP ^ "+" ^ str_of_int e, 2)
 let iLD_SPHL   =          Binary ("LD", str_SP, str_HL, 1)
-let iPOP_AF    =          Unary ("POP", str_AF, 1)
-let iPOP_r16   = fun r -> Unary ("POP", str_of_r16 r, 1)
-let iPUSH_AF   =          Unary ("PUSH", str_AF, 1)
-let iPUSH_r16  = fun r -> Unary ("PUSH", str_of_r16 r, 1)
+let iPOP_AF    =          Unary  ("POP", str_AF, 1)
+let iPOP_r16   = fun r -> Unary  ("POP", str_of_r16 r, 1)
+let iPUSH_AF   =          Unary  ("PUSH", str_AF, 1)
+let iPUSH_r16  = fun r -> Unary  ("PUSH", str_of_r16 r, 1)
 
 (* Miscellaneous Instructions *)
 let iCCF  = Nullary ("CCF", 1)
@@ -141,4 +141,5 @@ let iEI   = Nullary ("EI", 1)
 let iHALT = Nullary ("HALT", 1)
 let iNOP  = Nullary ("NOP", 1)
 let iSCF  = Nullary ("SCF", 1)
-let iSTOP = fun n -> Unary ("STOP", str_of_int n, 2) *)
+let iSTOP = fun n -> Unary ("STOP", str_of_int n, 2)
+*)

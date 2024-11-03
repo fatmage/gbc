@@ -1,4 +1,3 @@
-open Inttypes
 
 module Oam = struct
   module S = Ram.EightKB
@@ -8,7 +7,7 @@ module Ioregs = struct
 end
 module IEreg = struct
   module S : Addressable.S = struct
-    type t = uint8 list
+    type t = int (* u8 *) list
     let empty = []
     let get t i = List.nth t i
     let set t i v = t
@@ -16,9 +15,10 @@ module IEreg = struct
   end
 end
 
-type t = { regs: Registers.regfile; rom: Rom.S.t; ram : Ram.EightKB.t;
-           wram : Ram.EightKB.t; vram : Ram.EightKB.t; hram : Ram.EightKB.t;
-           oam: Oam.S.t; regio: Ioregs.S.t; ie: IEreg.S.t }
+type t =
+{ regs: Registers.regfile; rom: Rom.S.t; ram : Ram.EightKB.t;
+  wram : Ram.EightKB.t; vram : Ram.EightKB.t; hram : Ram.EightKB.t;
+  oam: Oam.S.t; regio: Ioregs.S.t; ie: IEreg.S.t }
 
 
 let initial =

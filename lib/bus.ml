@@ -17,23 +17,27 @@ open State
   FFFF	FFFF	Interrupt Enable register (IE)
  *)
 
-let get t i =
+let in_range l v r = l <= v && v <= r
+
+let get8 t i =
   match i with
-  | _ when i <= 0
+  | _ when i < 0
     -> failwith "Bus error: can't get memory at negative address."
-  | _ when i < 0x8000
+  | _ when in_range 0x0000 i 0x7FFF (* ROM *)
     -> Rom.S.get t.rom i
-  | _ when i < 0xA000
+  | _ when in_range 0x8000 i 0x9FFF (* VRAM *)
     -> Ram.EightKB.get t.vram i
-  | _ when i < 0xC000
+  | _ when in_range 0xA000 i 0xBFFF (* External RAM *)
     -> Ram.EightKB.get t.ram i
-  | _ when i < 0xE000
+  | _ when in_range 0xC000 i 0xDFFF (* WRAM *)
     -> Ram.EightKB.get t.wram i
-  | _ when i >= 0xFE00 && i < 0xFEA0
+  | _ when in_range 0xE000 i 0xFDFF (* Echo RAM *)
+    -> Ram.EightKB.get t.wram i
+  | _ when in_range 0xFE00 i 0xFE9F (* OAM *)
     -> Oam.S.get t.oam i
-  | _ when i >= 0xFF00 && i < 0xFF80
+  | _ when in_range 0xFF00 i 0xFF7F (* I/O Registers *)
     -> Ioregs.S.get t.regio i
-  | _ when i >= 0xFF80 && i < 0xFFFF
+  | _ when in_range 0xFF80 0xFFFE i (* HRAM *)
     -> Ram.EightKB.get t.hram i
   | _ when i == 0xFFFF
     -> IEreg.S.get t.ie i
@@ -41,7 +45,7 @@ let get t i =
     -> failwith "Bus error: address out of range."
 
 
-let set t i v =
+let set8 t i v =
   match i with
   | i when i <= 0
     -> failwith "Bus error: can't get memory at negative address."

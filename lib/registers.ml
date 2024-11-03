@@ -1,21 +1,21 @@
-open Inttypes
+open Intops
 
 type r8  = A | B | C | D | E | H | L
 type r16 = AF | BC | DE | HL | SP | PC
 type flag = Flag_z | Flag_n | Flag_h | Flag_c
 
 type regfile = {
-  _A : uint8; _B : uint8; _C : uint8; _D : uint8;
-  _E : uint8; _H : uint8; _L : uint8;
-  _AF : uint16; _BC : uint16; _DE : uint16; _HL: uint16;
-  _SP : uint16; _PC : uint16
+  _A : int (* u8 *); _B : int (* u8 *); _C : int (* u8 *); _D : int (* u8 *);
+  _E : int (* u8 *); _H : int (* u8 *); _L : int (* u8 *);
+  _AF : int (* u16 *); _BC : int (* u16 *); _DE : int (* u16 *);
+   _HL: int (* u16 *); _SP : int (* u16 *); _PC : int (* u16 *)
   }
 
 let initial = {
-  _A = U8.zero; _B = U8.zero; _C = U8.zero; _D = U8.zero;
-  _E = U8.zero; _H = U8.zero; _L = U8.zero;
-  _AF = U16.zero; _BC = U16.zero; _DE = U16.zero; _HL= U16.zero;
-  _SP = U16.zero; _PC = U16.zero
+  _A = 0; _B = 0; _C = 0; _D = 0;
+  _E = 0; _H = 0; _L = 0;
+  _AF = 0; _BC = 0; _DE = 0; _HL= 0;
+  _SP = 0; _PC = 0
 }
 
 let set_r8 rf r v =

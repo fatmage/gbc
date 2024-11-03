@@ -1,5 +1,3 @@
-open Inttypes
-
 
 let log2int n = int_of_float (Float.round (Float.log2 (float_of_int n)))
 
@@ -8,7 +6,7 @@ let log2int n = int_of_float (Float.round (Float.log2 (float_of_int n)))
 let make_chunk : int -> (module Addressable.S) = fun size ->
   (module struct
 
-  type t = Leaf | Node of int * t * uint8 * t | Cap of uint8 * t
+  type t = Leaf | Node of int * t * int (* u8 *) * t | Cap of int (* u8 *) * t
 
   let rec count_nodes mem =
     match mem with
@@ -19,10 +17,10 @@ let make_chunk : int -> (module Addressable.S) = fun size ->
     let rec help n i offset=
       match n with
         | 0 -> Leaf
-        | n -> Node (i + offset, help (n-1) (i/2) offset, U8.zero,
+        | n -> Node (i + offset, help (n-1) (i/2) offset, 0,
                                  help (n-1) (i/2) (offset + i))
     in
-    Cap (U8.zero, help (log2int size) (size/2) 0)
+    Cap (0, help (log2int size) (size/2) 0)
 
 
   let rec get mem index =
@@ -48,7 +46,6 @@ let make_chunk : int -> (module Addressable.S) = fun size ->
         Node (i,set l index v,x,r) else
         Node (i,l,x,set r index v)
       | _,_ -> failwith "no cap"
-
 
   let in_range n = if (n < 0 && n >= 8192) then true else false
 

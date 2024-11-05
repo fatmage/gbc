@@ -26,21 +26,21 @@ let get8 t i =
   | _ when in_range 0x0000 i 0x7FFF (* ROM *)
     -> Rom.S.get t.rom i
   | _ when in_range 0x8000 i 0x9FFF (* VRAM *)
-    -> Ram.EightKB.get t.vram i
+    -> Ram.VRAM.get t.vram i
   | _ when in_range 0xA000 i 0xBFFF (* External RAM *)
-    -> Ram.EightKB.get t.ram i
+    -> Ram.S.get t.ram i
   | _ when in_range 0xC000 i 0xDFFF (* WRAM *)
-    -> Ram.EightKB.get t.wram i
+    -> Ram.WRAM.get t.wram i
   | _ when in_range 0xE000 i 0xFDFF (* Echo RAM *)
-    -> Ram.EightKB.get t.wram i
+    -> Ram.WRAM.get t.wram i
   | _ when in_range 0xFE00 i 0xFE9F (* OAM *)
     -> Oam.S.get t.oam i
   | _ when in_range 0xFF00 i 0xFF7F (* I/O Registers *)
     -> Ioregs.S.get t.regio i
   | _ when in_range 0xFF80 0xFFFE i (* HRAM *)
-    -> Ram.EightKB.get t.hram i
+    -> Ram.HRAM.get t.hram i
   | _ when i == 0xFFFF
-    -> IEreg.S.get t.ie i
+    -> Iereg.S.get t.ie i
   | _
     -> failwith "Bus error: address out of range."
 
@@ -52,6 +52,6 @@ let set8 t i v =
   | i when i < 8192
     -> {t with rom = Rom.S.set t.rom i v}
   | i when i < 16384
-    -> {t with ram = Ram.EightKB.set t.ram (i - 8192) v}
+    -> {t with ram = Ram.S.set t.ram (i - 8192) v}
   | _
     -> failwith "Bus error: address out of range."

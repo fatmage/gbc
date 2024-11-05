@@ -61,3 +61,23 @@ module EightKB : Addressable.S = struct
   module B = (val make_chunk 8192 : Addressable.S)
   include B
 end
+
+module type RAM = sig
+  include Addressable.S
+end
+
+module S = struct
+  include EightKB
+end
+
+module WRAM = struct
+  include EightKB
+end
+
+module HRAM = struct
+  include EightKB
+end
+
+module VRAM = struct
+  include EightKB
+end

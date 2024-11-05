@@ -4,15 +4,15 @@ open Registers
 (* Instruction type *)
 type instruction =
 (*             mnemonic 1st arg  2nd arg  size *)
-  | NoArg of (State.t -> State.t) * int
-  | R8    of (State.t -> r8 -> State.t) * int
-  | RV8   of (State.t -> r8 -> int (* u8 *) -> State.t) * int
-  | RR8   of (State.t -> r8 -> r8 -> State.t) * int
-  | R16   of (State.t -> r16 -> State.t) * int
-  | RV16  of (State.t -> r16 -> int (* u16 *) -> State.t) * int
-  | RR16  of (State.t -> r16 -> r16 -> State.t) * int
-  | V8    of (State.t -> int (* u8 *) -> State.t) * int
-  | V16   of (State.t -> int (* u16 *) -> State.t) * int
+  | NoArg of (State.t -> State.t * int)
+  | R8    of (r8 -> (State.t -> State.t * int))
+  | RV8   of (r8 -> int (* u8 *) -> (State.t -> State.t * int))
+  | RR8   of (r8 -> r8 -> (State.t -> State.t * int))
+  | R16   of (r16 -> (State.t -> State.t * int))
+  | RV16  of (r16 -> int (* u16 *) -> (State.t -> State.t * int))
+  | RR16  of (r16 -> r16 -> (State.t -> State.t * int))
+  | V8    of (int (* u8 *) -> (State.t -> State.t * int))
+  | V16   of (int (* u16 *) -> (State.t -> State.t * int))
 
 
 (** All operations as values of the algebraic type instruction **)

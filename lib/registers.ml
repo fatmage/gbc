@@ -11,7 +11,15 @@ type regfile = {
    _HL: int (* u16 *); _SP : int (* u16 *); _PC : int (* u16 *)
   }
 
-let initial = {
+type flags = {
+  z : int (* bit *); n : int (* bit *); h : int (* bit *); c : int (* bit *)
+}
+
+let initial_flags = {
+  z = 0; n = 0; h = 0; c = 0
+}
+
+let initial_regfile = {
   _A = 0; _B = 0; _C = 0; _D = 0;
   _E = 0; _H = 0; _L = 0;
   _AF = 0; _BC = 0; _DE = 0; _HL= 0;
@@ -55,3 +63,17 @@ let get_r16 rf rr =
   | HL -> rf._HL
   | SP -> rf._SP
   | PC -> rf._PC
+
+let get_flag fs f =
+  match f with
+  | Flag_z -> fs.z
+  | Flag_n -> fs.n
+  | Flag_h -> fs.h
+  | Flag_c -> fs.h
+
+let set_flag fs f v =
+  match f with
+  | Flag_z -> { fs with z = v }
+  | Flag_n -> { fs with n = v }
+  | Flag_h -> { fs with h = v }
+  | Flag_c -> { fs with c = v }

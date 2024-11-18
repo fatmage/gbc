@@ -12,11 +12,11 @@ type regfile = {
   }
 
 type flags = {
-  z : int (* bit *); n : int (* bit *); h : int (* bit *); c : int (* bit *)
+  z : bool (* bit *); n : bool (* bit *); h : bool (* bit *); c : bool (* bit *)
 }
 
 let initial_flags = {
-  z = 0; n = 0; h = 0; c = 0
+  z = false; n = false; h = false; c = false
 }
 
 let initial_regfile = {
@@ -66,10 +66,10 @@ let get_r16 rf rr =
 
 let get_flag fs f =
   match f with
-  | Flag_z -> fs.z
-  | Flag_n -> fs.n
-  | Flag_h -> fs.h
-  | Flag_c -> fs.h
+  | Flag_z -> if fs.z then 1 else 0
+  | Flag_n -> if fs.n then 1 else 0
+  | Flag_h -> if fs.h then 1 else 0
+  | Flag_c -> if fs.h then 1 else 0
 
 let set_flag fs f v =
   match f with

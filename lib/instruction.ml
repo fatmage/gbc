@@ -1,62 +1,200 @@
-
 (* Instruction type *)
-(* type instruction =
-(*             mnemonic 1st arg  2nd arg  size *)
-  | NoArg of (State.t -> State.t * int)
-  | R8    of (r8 -> (State.t -> State.t * int))
-  | RV8   of (r8 -> int (* u8 *) -> (State.t -> State.t * int))
-  | RR8   of (r8 -> r8 -> (State.t -> State.t * int))
-  | R16   of (r16 -> (State.t -> State.t * int))
-  | RV16  of (r16 -> int (* u16 *) -> (State.t -> State.t * int))
-  | RR16  of (r16 -> r16 -> (State.t -> State.t * int))
-  | V8    of (int (* u8 *) -> (State.t -> State.t * int))
-  | V16   of (int (* u16 *) -> (State.t -> State.t * int)) *)
 
-
-type instruction = State.t -> (State.t * int)
-
+type instruction = State.t -> State.t * int
 
 (* 8-bit Arithmetic and Logic Instructions *)
 
-(*let iADC_Ar8  = fun r -> Binary ("ADC", str_A, str_of_r8 r, 1)*)
-(* let iADC_Ar8 r8 = fun st ->
-  match State.get_r8 st Registers.A, State.get_r8 st r8 with
-  | valA, valR when valA == 0 && valR == 0 ->
-    State.set_flag (State.set_r8 st Registers.A (valA + valR + State.get_flag st Registers.Flag_c)) Registers.Flag_z 1, 1
-  | valA, valR *)
+let iADC_Ar8 r8 = fun st ->
+  let a, r = State.get_A st, State.get_r8 st r8 in
+  let c = State.get_flag st Regs.Flag_c in
+  let sum = a + r + c in let res = Intops.u8 sum in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+  ~h:(a land 0xF + r land 0xF + c > 0xF) ~c:(sum > 0xFF) (),
+  1
 
-(*let iADC_AHLp =          Binary ("ADC", str_A, strptr_of_r16 HL, 1)*)
 let iADC_AHLp = fun st ->
-  let valHLp = Bus.get8 st (State.get_r16 st Registers.HL) in
-  let valA = State.get_r8 st Registers.A in
-  State.set_r8 st Registers.A (valA + valHLp), 1
-(*let iADC_An8  = fun n -> Binary ("ADC", str_A, str_of_int n, 2)*)
-(*let iADD_Ar8  = fun r -> Binary ("ADD", str_A, str_of_r8 r, 1)*)
-(*let iADD_AHLp =          Binary ("ADD", str_A, strptr_of_r16 HL, 1)*)
-(*let iADD_An8  = fun n -> Binary ("ADD", str_A, str_of_int n, 2)*)
-(*let iAND_Ar8  = fun r -> Binary ("AND", str_A, str_of_r8 r, 1)*)
-(*let iAND_AHLp =          Binary ("AND", str_A, strptr_of_r16 HL, 1)*)
-(*let iAND_An8  = fun n -> Binary ("AND", str_A, str_of_int n, 2)*)
-(*let iCP_Ar8   = fun r -> Binary ("CP",  str_A, str_of_r8 r, 1)*)
-(*let iCP_AHLp  =          Binary ("CP",  str_A, strptr_of_r16 HL, 1)*)
-(*let iCP_An8   = fun n -> Binary ("CP",  str_A, str_of_int n, 2)*)
-(*let iDEC_r8   = fun r -> Unary  ("DEC", str_of_r8 r, 1)*)
-(*let iDEC_HLp  =          Unary  ("DEC", strptr_of_r16 HL, 1)*)
-(*let iINC_r8  = fun r ->  Unary  ("INC", str_of_r8 r, 1)*)
-(*let iINC_HLp =           Unary  ("INC", strptr_of_r16 HL, 1)*)
-(*let iOR_Ar8   = fun r -> Binary ("OR",  str_A, str_of_r8 r, 1)*)
-(*let iOR_AHLp  =          Binary ("OR",  str_A, strptr_of_r16 HL, 1)*)
-(*let iOR_An8   = fun n -> Binary ("OR",  str_A, str_of_int n, 2)*)
-(*let iSBC_Ar8  = fun r -> Binary ("SBC", str_A, str_of_r8 r, 1)*)
-(*let iSBC_AHLp =          Binary ("SBC", str_A, strptr_of_r16 HL, 1)*)
-(*let iSBC_An8  = fun n -> Binary ("SBC", str_A, str_of_int n, 2)*)
-(*let iSUB_Ar8  = fun r -> Binary ("SUB", str_A, str_of_r8 r, 1)*)
-(*let iSUB_AHLp =          Binary ("SUB", str_A, strptr_of_r16 HL, 1)*)
-(*let iSUB_An8  = fun n -> Binary ("SUB", str_A, str_of_int n, 2)*)
-(*let iXOR_Ar8  = fun r -> Binary ("XOR", str_A, str_of_r8 r, 1)*)
-(*let iXOR_AHLp =          Binary ("XOR", str_A, strptr_of_r16 HL, 1)*)
-(*let iXOR_An8  = fun n -> Binary ("XOR", str_A, str_of_int n, 2)*)
-(* *)
+  let a = State.get_A st in
+  let hlp = State.get_HLp st in
+  let c = State.get_flag st Regs.Flag_c in
+  let sum = a + hlp + c in let res = Intops.u8 sum in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+  ~h:(a land 0xF + hlp land 0xF + c > 0xF) ~c:(sum > 0xFF) (),
+  2
+
+let iADC_An8 n = fun st ->
+  let a, c = State.get_A st, State.get_flag st (Regs.Flag_c) in
+  let sum = a + n + c in let res = Intops.u8 sum in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+  ~h:(a land 0xF + n land 0xF + c > 0xF) ~c:(sum > 0xFF) (),
+  2
+
+let iADD_Ar8 r8 = fun st ->
+  let a, r = State.get_A st, State.get_r8 st r8 in
+  let sum = a + r in let res = Intops.u8 sum in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+  ~h:(a land 0xF + r land 0xF > 0xF) ~c:(sum > 0xFF) (),
+  1
+
+let iADD_AHLp = fun st ->
+  let a = State.get_A st in
+  let hlp = State.get_HLp st in
+  let sum = a + hlp in let res = Intops.u8 sum in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+  ~h:(a land 0xF + hlp land 0xF > 0xF) ~c:(sum > 0xFF) (),
+  2
+
+let iADD_An8 n = fun st ->
+  let a = State.get_A st in
+  let sum = a + n in let res = Intops.u8 sum in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+  ~h:(a land 0xF + n land 0xF > 0xF) ~c:(sum > 0xFF) (),
+  2
+
+let iAND_Ar8 r8 = fun st ->
+  let result = State.get_A st land State.get_r8 st r8 in
+  State.set_flags (State.set_A st result) ~z:(result = 0) ~n:false
+  ~h:true  ~c:false (),
+  1
+
+let iAND_AHLp = fun st ->
+  let result = State.get_A st land State.get_HLp st in
+  State.set_flags (State.set_A st result) ~z:(result = 0) ~n:false
+  ~h:true ~c:false (),
+  2
+
+let iAND_An8 n = fun st ->
+  let result = State.get_A st land n in
+  State.set_flags (State.set_A st result) ~z:(result = 0) ~n:false
+  ~h:true ~c:false (),
+  2
+
+let iCP_Ar8 r = fun st ->
+  let a, y = State.get_A st, State.get_r8 st r in
+  let result = a - y in
+  State.set_flags st ~z:(result = 0) ~n:true
+  ~h:(a land 0xF < y land 0xF) ~c:(y > a) (),
+  1
+
+let iCP_AHLp = fun st ->
+  let a, hlp = State.get_A st, State.get_HLp st in
+  let result = a - hlp in
+  State.set_flags st ~z:(result = 0) ~n:true
+  ~h:(a land 0xF < hlp land 0xF) ~c:(hlp > a) (),
+  2
+
+let iCP_An8 n = fun st ->
+  let a = State.get_A st in
+  let result = a - n in
+  State.set_flags st ~z:(result = 0) ~n:true
+  ~h:(a land 0xF < n land 0xF) ~c:(n > a) (),
+  2
+
+let iDEC_r8 r = fun st ->
+  let x = State.get_r8 st r in
+  let dec = x - 1 in let res = if dec < 0 then 0xFF else dec in
+  State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:true
+  ~h:(x land 0x0F = 0x0) (),
+  1
+
+let iDEC_HLp = fun st ->
+  let hlp = State.get_HLp st in
+  let dec = hlp - 1 in let res = if dec < 0 then 0xFF else dec in
+  State.set_flags (State.Bus.set8 st (State.get_HL st) res) ~z:(res = 0)
+  ~n:true ~h:(hlp land 0x0F = 0x0) (),
+  3
+
+let iINC_r8 r = fun st ->
+  let x = State.get_r8 st r in
+  let inc = x + 1 in let res = if inc > 0xFF then 0 else inc in
+  State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
+  ~h:(x land 0x0F = 0x0F) (),
+  1
+
+let iINC_HLp = fun st ->
+  let hlp = State.get_HLp st in
+  let inc = hlp + 1 in let res = if inc > 0xFF then 0 else inc in
+  State.set_flags (State.Bus.set8 st (State.get_HL st) res) ~z:(res = 0)
+  ~n:false ~h:(hlp land 0x0F = 0x0F) (),
+  3
+
+let iOR_Ar8 r = fun st ->
+  let res = State.get_A st lor State.get_r8 st r in
+  State.set_flags (State.set_A st res)
+  ~z:(res = 0) ~n:false ~h:false ~c:false (),
+  1
+
+let iOR_AHLp = fun st ->
+  let res = State.get_A st lor State.get_HLp st in
+  State.set_flags (State.set_A st res)
+  ~z:(res = 0) ~n:false ~h:false ~c:false (),
+  2
+
+let iOR_An8 n = fun st ->
+  let res = State.get_A st lor n in
+  State.set_flags (State.set_A st res)
+  ~z:(res = 0) ~n:false ~h:false ~c:false (),
+  2
+
+let iSBC_Ar8 r = fun st ->
+  let a, x, c = State.get_A st, State.get_r8 st r, State.get_flag st Flag_c in
+  let sub = a - x - c in let res = if sub < 0 then 0x100 + sub else sub in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
+  ~h:(a land 0xF < x land 0xF + c) ~c:(sub < 0) (),
+  1
+
+let iSBC_AHLp = fun st ->
+  let a, hlp, c = State.get_A st, State.get_HLp st, State.get_flag st Flag_c in
+  let sub = a - hlp - c in let res = if sub < 0 then 0x100 + sub else sub in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
+  ~h:(a land 0xF < hlp land 0xF + c) ~c:(sub < 0) (),
+  2
+
+let iSBC_An8 n = fun st ->
+  let a, c = State.get_A st, State.get_flag st Flag_c in
+  let sub = a - n - c in let res = if sub < 0 then 0x100 + sub else sub in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
+  ~h:(a land 0xF < n land 0xF + c) ~c:(sub < 0) (),
+  2
+
+let iSUB_Ar8 r = fun st ->
+  let a, x = State.get_A st, State.get_r8 st r in
+  let sub = a - x in let res = if sub < 0 then 0x100 + sub else sub in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
+  ~h:(a land 0xF < x land 0xF) ~c:(sub < 0) (),
+  1
+
+let iSUB_AHLp = fun st ->
+  let a, hlp = State.get_A st, State.get_HLp st in
+  let sub = a - hlp in let res = if sub < 0 then 0x100 + sub else sub in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
+  ~h:(a land 0xF < hlp land 0xF) ~c:(sub < 0) (),
+  2
+
+let iSUB_An8 n = fun st ->
+  let a = State.get_A st in
+  let sub = a - n in let res = if sub < 0 then 0x100 + sub else sub in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
+  ~h:(a land 0xF < n land 0xF) ~c:(sub < 0) () ,
+  2
+
+let iXOR_Ar8 r = fun st ->
+  let res = State.get_A st lxor State.get_r8 st r in
+  State.set_flags (State.set_A st res)
+  ~z:(res = 0) ~n:false ~h:false ~c:false (),
+  1
+
+let iXOR_AHLp = fun st ->
+  let res = State.get_A st lxor State.get_HLp st in
+  State.set_flags (State.set_A st res)
+  ~z:(res = 0) ~n:false ~h:false ~c:false (),
+  2
+
+let iXOR_An8 n = fun st ->
+  let res = State.get_A st lxor n in
+  State.set_flags (State.set_A st res)
+  ~z:(res = 0) ~n:false ~h:false ~c:false (),
+  2
+
 (*(* 16-bit Arithmetic Instructions *)*)
 (*let iADD_HLr16 = fun r -> Binary ("ADD", str_HL, str_of_r16 r, 1)*)
 (*let iDEC_r16   = fun r -> Unary  ("DEC", str_of_r16 r, 1)*)

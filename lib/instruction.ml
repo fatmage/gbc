@@ -260,26 +260,136 @@ let iSWAP_HLp = fun st ->
   ~z:(res = 0) ~n:false ~h:false ~c:false (),
   4
 
-(*(* Bit Shift Instructions *)*)
-(*let iRL_r8   = fun r -> Unary   ("RL", str_of_r8 r, 2)*)
-(*let iRL_HLp  =          Unary   ("RL", strptr_of_r16 HL, 2)*)
-(*let iRLA     =          Nullary ("RLA", 1)*)
-(*let iRLC_r8  = fun r -> Unary   ("RLC", str_of_r8 r, 2)*)
-(*let iRLC_HLp =          Unary   ("RLC", strptr_of_r16 HL, 2)*)
-(*let iRLCA    =          Nullary ("RLCA", 1)*)
-(*let iRR_r8   = fun r -> Unary   ("RR", str_of_r8 r, 2)*)
-(*let iRR_HLp  =          Unary   ("RR", strptr_of_r16 HL, 2)*)
-(*let iRRA     =          Nullary ("RRA", 1)*)
-(*let iRRC_r8  = fun r -> Unary   ("RRC", str_of_r8 r, 2)*)
-(*let iRRC_HLp =          Unary   ("RRC", strptr_of_r16 HL, 2)*)
-(*let iRRCA    =          Nullary ("RRCA", 1)*)
-(*let iSLA_r8  = fun r -> Unary   ("SLA", str_of_r8 r, 2)*)
-(*let iSLA_HLp =          Unary   ("SLA", strptr_of_r16 HL, 2)*)
-(*let iSRA_r8  = fun r -> Unary   ("SRA", str_of_r8 r, 2)*)
-(*let iSRA_HLp =          Unary   ("SRA", strptr_of_r16 HL, 2)*)
-(*let iSRL_r8  = fun r -> Unary   ("SRL", str_of_r8 r, 2)*)
-(*let iSRL_HLp =          Unary   ("SRL", strptr_of_r16 HL, 2)*)
-(* *)
+(* Bit Shift Instructions *)
+let iRL_r8 r = fun st ->
+  let x, c = State.get_r8 st r, State.get_flag st Flag_c in
+  let shifted = x lsl 1 lor c in let res = Intops.u8 shifted in
+  State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(x land 0x80 > 0) (),
+  2
+
+let iRL_HLp = fun st ->
+  let hlp, c = State.get_HLp st, State.get_flag st Flag_c in
+  let shifted = hlp lsl 1 lor c in let res = Intops.u8 shifted in
+  State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(hlp land 0x80 > 0) (),
+  4
+
+let iRLA = fun st ->
+  let a, c = State.get_A st, State.get_flag st Flag_c in
+  let shifted = a lsl 1 lor c in let res = Intops.u8 shifted in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(a land 0x80 > 0) (),
+  1
+
+let iRLC_r8 r = fun st ->
+  let x = State.get_r8 st r in
+  let shifted = x lsl 1 in
+  let res = shifted land 0x100 lsr 8 lor shifted |> Intops.u8 in
+  State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(x land 0x80 > 0) (),
+  2
+
+let iRLC_HLp = fun st ->
+  let hlp = State.get_HLp st in
+  let shifted = hlp lsl 1 in
+  let res = shifted land 0x100 lsr 8 lor shifted |> Intops.u8 in
+  State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(hlp land 0x80 > 0) (),
+  4
+
+let iRLCA = fun st ->
+  let a = State.get_A st in
+  let shifted = a lsl 1 in
+  let res = shifted land 0x100 lsr 8 lor shifted |> Intops.u8 in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(a land 0x80 > 0) (),
+  1
+
+let iRR_r8 r = fun st ->
+  let x, c = State.get_r8 st r, State.get_flag st Flag_c in
+  let shifted = x lsr 1 lor (c lsl 7) in let res = Intops.u8 shifted in
+  State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(x land 0b1 > 0) (),
+  2
+
+let iRR_HLp = fun st ->
+  let hlp, c = State.get_HLp st, State.get_flag st Flag_c in
+  let shifted = hlp lsr 1 lor (c lsl 7) in let res = Intops.u8 shifted in
+  State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(hlp land 0b1 > 0) (),
+  4
+
+let iRRA = fun st ->
+  let a, c = State.get_A st, State.get_flag st Flag_c in
+  let shifted = a lsr 1 lor (c lsl 7) in let res = Intops.u8 shifted in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(a land 0b1 > 0) (),
+  1
+
+let iRRC_r8 r = fun st ->
+  let x = State.get_r8 st r in
+  let res = x lsr 1 lor (x land 0b1 lsl 7) |> Intops.u8 in
+  State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(x land 0b1 > 0) (),
+  2
+
+let iRRC_HLp = fun st ->
+  let hlp = State.get_HLp st in
+  let res = hlp lsr 1 lor (hlp land 0b1 lsl 7) |> Intops.u8 in
+  State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(hlp land 0b1 > 0) (),
+  4
+
+let iRRCA = fun st ->
+  let a = State.get_A st in
+  let res = a lsr 1 lor (a land 0b1 lsl 7) |> Intops.u8 in
+  State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(a land 0b1 > 0) (),
+  1
+
+let iSLA_r8 r = fun st ->
+  let x = State.get_r8 st r in
+  let res = x lsl 1 |> Intops.u8 in
+  State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(x land 0x80 > 0) (),
+  2
+
+let iSLA_HLp = fun st ->
+  let hlp = State.get_HLp st in
+  let res = hlp lsl 1 |> Intops.u8 in
+  State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(hlp land 0x80 > 0) (),
+  4
+
+let iSRA_r8 r = fun st ->
+  let x = State.get_r8 st r in
+  let res = x lsr 1 lor (x land 0x80)|> Intops.u8 in
+  State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(x land 0b1 > 0) (),
+  2
+
+let iSRA_HLp = fun st ->
+  let hlp = State.get_HLp st in
+  let res = hlp lsr 1 lor (hlp land 0x80) |> Intops.u8 in
+  State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(hlp land 0b1 > 0) (),
+  4
+
+let iSRL_r8 r = fun st ->
+  let x = State.get_r8 st r in
+  let res = x lsr 1 |> Intops.u8 in
+  State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(x land 0b1 > 0) (),
+  2
+
+let iSRL_HLp = fun st ->
+  let hlp = State.get_HLp st in
+  let res = hlp lsr 1 |> Intops.u8 in
+  State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
+  ~h:false ~c:(hlp land 0b1 > 0) (),
+  4
+
 (*(* Load Instructions *)*)
 (*let iLD_rr8    = fun ra rb -> Binary ("LD", str_of_r8 ra, str_of_r8 rb, 1)*)
 (*let iLD_rn8    = fun r n ->   Binary ("LD", str_of_r8 r, str_of_int n, 2)*)

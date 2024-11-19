@@ -526,31 +526,98 @@ let iRETI : instruction = fun st ->
   let st',act,_ = iRET { st with ime = Enabled } in
   st', act, 4
 
-let iRST_vec n = fun st ->
+let iRST_vec n : instruction = fun st ->
   let st',act,_ = iCALL_n16 n st in
   st', act, 4
 
-(*(* Stack Operations Instructions *)*)
-(*let iADD_HLSP  =          Binary ("ADD", str_HL, str_SP, 1)*)
-(*let iADD_SPe8  = fun e -> Binary ("ADD", str_SP, str_of_int e, 2)*)
-(*let iDEC_SP    =          Unary  ("DEC", str_SP, 1)*)
-(*let iINC_SP    =          Unary  ("INC", str_SP, 1)*)
-(*let iLD_SPn16  = fun n -> Binary ("LD", str_SP, str_of_int n, 3)*)
-(*let iLD_n16pSP = fun n -> Binary ("LD", strptr_of_int n, str_SP, 3)*)
-(*let iLD_HLSPe8 = fun e -> Binary ("LD", str_HL, str_SP ^ "+" ^ str_of_int e, 2)*)
-(*let iLD_SPHL   =          Binary ("LD", str_SP, str_HL, 1)*)
-(*let iPOP_AF    =          Unary  ("POP", str_AF, 1)*)
-(*let iPOP_r16   = fun r -> Unary  ("POP", str_of_r16 r, 1)*)
-(*let iPUSH_AF   =          Unary  ("PUSH", str_AF, 1)*)
-(*let iPUSH_r16  = fun r -> Unary  ("PUSH", str_of_r16 r, 1)*)
-(* *)
-(*(* Miscellaneous Instructions *)*)
-(*let iCCF  = Nullary ("CCF", 1)*)
-(*let iCPL  = Nullary ("CPL", 1)*)
-(*let iDAA  = Nullary ("DAA", 1)*)
-(*let iDI   = Nullary ("DI", 1)*)
-(*let iEI   = Nullary ("EI", 1)*)
-(*let iHALT = Nullary ("HALT", 1)*)
-(*let iNOP  = Nullary ("NOP", 1)*)
-(*let iSCF  = Nullary ("SCF", 1)*)
-(*let iSTOP = fun n -> Unary ("STOP", str_of_int n, 2)*)
+(* Stack Operations Instructions *)
+let iADD_HLSP : instruction = fun st ->
+  let hl, sp = State.get_HL st, State.get_SP st in
+  let sum = hl + sp in let res = Intops.u16 sum in
+  State.set_flags (State.set_HL st res) ~n:false
+  ~h:(hl land 0xFFF + sp land 0xFFF > 0xFFF) ~c:(sum > 0xFFFF) (),
+  Next, 2
+
+let iADD_SPe8 e : instruction = fun st ->
+  let sp = State.get_SP st in
+  let sum = sp + (Intops.s8 e) in let res = Intops.u16 sum in
+  State.set_flags (State.set_SP st res) ~z:false ~n:false
+  ~h:(sp land 0xF + e land 0xF > 0xF) ~c:(sp land 0xFF + e land 0xFF > 0xFF) (),
+  Next, 4
+
+let iDEC_SP : instruction = fun st ->
+  State.dec_SP st,
+  Next, 2
+
+let iINC_SP : instruction = fun st ->
+  State.inc_SP st,
+  Next, 2
+
+let iLD_SPn16 n : instruction = fun st ->
+  State.set_SP st n,
+  Next, 3
+
+let iLD_n16pSP n : instruction = fun st ->
+  State.Bus.set16 st n (State.get_SP st),
+  Next, 5
+
+let iLD_HLSPe8 e : instruction = fun st ->
+  let sp = State.get_SP st in
+  let sum = sp + (Intops.s8 e) in let res = Intops.u16 sum in
+  State.set_flags (State.set_HL st res) ~z:false ~n:false
+  ~h:(sp land 0xF + e land 0xF > 0xF) ~c:(sp land 0xFF + e land 0xFF > 0xFF) (),
+  Next, 3
+
+let iLD_SPHL : instruction = fun st ->
+  State.set_SP st (State.get_HL st),
+  Next, 2
+
+let iPOP_AF : instruction = fun st ->
+  let sp = State.get_SPp st in
+  State.set_flags (State.set_r16 (State.inc_SP st) AF sp) ~z:(sp land 0x80 > 0)
+  ~n:(sp land 0x40 > 0) ~h:(sp land 0x20 > 0) ~c:(sp land 0x10 > 0) (),
+  Next, 3
+
+let iPOP_r16 r : instruction = fun st ->
+  let sp = State.get_SPp st in
+  State.set_flags (State.set_r16 (State.inc_SP st) r sp) ~z:(sp land 0x80 > 0)
+  ~n:(sp land 0x40 > 0) ~h:(sp land 0x20 > 0) ~c:(sp land 0x10 > 0) (),
+  Next, 3
+
+let iPUSH_AF : instruction = fun st ->
+  State.dec_SP (State.set_SPp st (State.get_r16 st AF)),
+  Next, 4
+
+let iPUSH_r16 r : instruction = fun st ->
+  State.dec_SP (State.set_SPp st (State.get_r16 st r)),
+  Next, 4
+
+(* Miscellaneous Instructions *)
+let iCCF : instruction = fun st ->
+  State.set_flags st ~n:false ~h:false ~c:(State.get_flag st Flag_c == 0) (),
+  Next, 1
+
+let iCPL : instruction = fun st ->
+  State.set_A st (State.get_A st |> lnot),
+  Next, 1
+
+(* PLACEHOLDER PLACEHOLDER PLACEHOLDER TODO TODO TODO PLACEHOLDER *)
+let iDAA : instruction = fun st -> st, Next, 1
+
+let iDI : instruction = fun st ->
+  { st with ime = Disabled }, Next, 1
+
+let iEI : instruction = fun st ->
+  {st with ime = Enabling }, Next, 1
+
+(* PLACEHOLDER PLACEHOLDER PLACEHOLDER TODO TODO TODO PLACEHOLDER *)
+let iHALT : instruction = fun st -> st, Next, 1
+
+let iNOP : instruction = fun st ->
+  st, Next, 1
+
+let iSCF : instruction = fun st ->
+  State.set_flags st ~n:false ~h:false ~c:true (), Next, 1
+
+(* PLACEHOLDER PLACEHOLDER PLACEHOLDER TODO TODO TODO PLACEHOLDER *)
+let iSTOP : instruction = fun st -> st, Next, 1

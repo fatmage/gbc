@@ -5,3 +5,4 @@ let get_low u16 = u16 land 0xFF
 
 let u8 = (land) 0xFF
 let u16 = (land) 0xFFFF
+let s8 n = n land 0x7F - (n land 0x80)

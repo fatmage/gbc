@@ -1,5 +1,7 @@
+type interrupts = Disabled | Enabling | Enabled
+
 type t =
-{ regs: Regs.regfile; flags : Regs.flags;
+{ regs: Regs.regfile; flags : Regs.flags; ime : interrupts;
   rom: Rom.S.t; ram : Ram.S.t; wram : Ram.WRAM.t;
   vram : Ram.VRAM.t; hram : Ram.HRAM.t;
   oam: Oam.S.t; regio: Ioregs.S.t; ie: Iereg.S.t }
@@ -60,10 +62,15 @@ type t =
       | _
         -> failwith "Bus error: address out of range."
 
+      (* PLACEHOLDER *)
+      let get16 = get8
+      (* PLACEHOLDER *)
+      let set16 = set8
+
   end
 
 let initial =
-  {regs = Regs.initial_regfile; flags = Regs.initial_flags;
+  {regs = Regs.initial_regfile; flags = Regs.initial_flags; ime = Disabled;
   rom = Rom.S.empty; ram = Ram.S.empty; wram = Ram.WRAM.empty;
   vram = Ram.VRAM.empty; hram = Ram.HRAM.empty;
   oam = Oam.S.empty; regio = Ioregs.S.empty; ie = Iereg.S.empty }
@@ -89,3 +96,16 @@ let get_HL st = st.regs._HL
 let set_HL st v = { st with regs = { st.regs with _HL = v } }
 let get_HLp st = Bus.get8 st st.regs._HL
 let set_HLp st v = Bus.set8 st st.regs._HL v
+
+let get_PC st = st.regs._PC
+let set_PC st v = { st with regs = { st.regs with _PC = v } }
+
+let get_SP st = st.regs._SP
+let set_SP st v = { st with regs = { st.regs with _SP = v } }
+let get_SPp st = Bus.get16 st st.regs._SP
+let set_SPp st v = Bus.set16 st st.regs._SP v
+
+let inc_SP st = { st with regs = { st.regs with _SP = st.regs._SP + 2 } }
+let dec_SP st = { st with regs = { st.regs with _SP = st.regs._SP - 2 } }
+
+let adv_PC st c = { st with regs = { st.regs with _PC = st.regs._PC + c } }

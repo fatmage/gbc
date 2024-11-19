@@ -390,26 +390,85 @@ let iSRL_HLp = fun st ->
   ~h:false ~c:(hlp land 0b1 > 0) (),
   4
 
-(*(* Load Instructions *)*)
-(*let iLD_rr8    = fun ra rb -> Binary ("LD", str_of_r8 ra, str_of_r8 rb, 1)*)
-(*let iLD_rn8    = fun r n ->   Binary ("LD", str_of_r8 r, str_of_int n, 2)*)
-(*let iLD_rn16   = fun r n ->   Binary ("LD", str_of_r16 r, str_of_int n, 3)*)
-(*let iLD_HLpr8  = fun r ->     Binary ("LD", strptr_of_r16 HL, str_of_r8 r, 1)*)
-(*let iLD_HLpn8  = fun n ->     Binary ("LD", strptr_of_r16 HL, str_of_int n, 2)*)
-(*let iLD_r8HLp  = fun r ->     Binary ("LD", str_of_r8 r, strptr_of_r16 HL, 1)*)
-(*let iLD_r16pA  = fun r ->     Binary ("LD", strptr_of_r16 r, str_A, 1)*)
-(*let iLD_n16pA  = fun n ->     Binary ("LD", strptr_of_int n, str_A, 3)*)
-(*let iLDH_n16pA = fun n ->     Binary ("LDH", strptr_of_int n, str_A, 2)*)
-(*let iLDH_CpA   =              Binary ("LDH", strptr_of_r8 C, str_A, 1)*)
-(*let iLD_Ar16p  = fun r ->     Binary ("LD", str_A, strptr_of_r16 r, 1)*)
-(*let iLD_An16p  = fun n ->     Binary ("LD", str_A, strptr_of_int n, 3)*)
-(*let iLDH_An16p = fun n ->     Binary ("LDH", str_A, strptr_of_int n, 2)*)
-(*let iLDH_ACp   =              Binary ("LDH", str_A, strptr_of_r8 C, 1)*)
-(*let iLD_HLIpA  =              Binary ("LD", strptrinc_of_r16 HL, str_A, 1)*)
-(*let iLD_HLDpA  =              Binary ("LD", strptrdec_of_r16 HL, str_A, 1)*)
-(*let iLD_AHLIp  =              Binary ("LD", str_A, strptrinc_of_r16 HL, 1)*)
-(*let iLD_AHLDp  =              Binary ("LD", str_A, strptrdec_of_r16 HL, 1)*)
-(* *)
+(* Load Instructions *)
+let iLD_rr8 rl rr = fun st ->
+  State.set_r8 st rl (State.get_r8 st rr),
+  1
+
+let iLD_rn8 rl n = fun st ->
+  State.set_r8 st rl n,
+  2
+
+let iLD_rn16 rl n = fun st ->
+  State.set_r16 st rl n,
+  3
+
+let iLD_HLPr8 r = fun st ->
+  State.set_HLp st (State.get_r8 st r),
+  2
+
+let iLD_HLpn8 n = fun st ->
+  State.set_HLp st n,
+  3
+
+let iLD_r8HLp r = fun st ->
+  State.set_r8 st r (State.get_HLp st),
+  2
+
+let iLD_r16pA r = fun st ->
+  State.Bus.set8 st (State.get_r16 st r) (State.get_A st),
+  2
+
+let iLD_n16pA n = fun st ->
+  State.Bus.set8 st n (State.get_A st),
+  4
+
+let iLDH_n16pA n = fun st ->
+  State.Bus.set8 st (0xFF00 + n) (State.get_A st),
+  3
+
+let iLDH_CpA = fun st ->
+  State.Bus.set8 st (State.get_r8 st C + 0xFF00) (State.get_A st),
+  2
+
+let iLD_Ar16p r = fun st ->
+  State.set_A st (State.Bus.get8 st (State.get_r16 st r)),
+  2
+
+let iLD_An16p n = fun st ->
+  State.set_A st (State.Bus.get8 st n),
+  4
+
+let iLDH_An16p n = fun st ->
+  State.set_A st (State.Bus.get8 st (0xFF00 + n)),
+  3
+
+let iLDH_ACp = fun st ->
+  State.set_A st (State.Bus.get8 st (State.get_r8 st C + 0xFF00)),
+  2
+
+let iLD_HLIpA = fun st ->
+  let st' = State.set_HLp st (State.get_A st) in
+  State.set_HL st' (State.get_HL st' + 1 |> Intops.u16),
+  2
+
+let iLD_HLDpA = fun st ->
+  let st' = State.set_HLp st (State.get_A st) in
+  let res = State.get_HL st' - 1 in
+  State.set_HL st' (if res < 0 then 0xFFFF else res),
+  2
+
+let iLD_AHLIp = fun st ->
+  let st' = State.set_A st (State.get_HLp st) in
+  State.set_HL st' (State.get_HL st' +1 |> Intops.u16),
+  2
+
+let iLD_AHLDp = fun st ->
+  let st' = State.set_A st (State.get_HLp st) in
+  let res = State.get_HL st' - 1 in
+  State.set_HL st' (if res < 0 then 0xFFFF else res),
+  2
+
 (*(* Jumps and Subroutines *)*)
 (*let iCALL_n16  = fun n ->   Unary ("CALL", str_of_int n, 3)*)
 (*let iCALL_cn16 = fun c n -> Binary ("CALL", str_of_cond c, str_of_int n, 3)*)

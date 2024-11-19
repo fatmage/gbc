@@ -86,4 +86,6 @@ let set_flags st
 let get_A st = st.regs._A
 let set_A st v = { st with regs = { st.regs with _A = v } }
 let get_HL st = st.regs._HL
+let set_HL st v = { st with regs = { st.regs with _HL = v } }
 let get_HLp st = Bus.get8 st st.regs._HL
+let set_HLp st v = Bus.set8 st st.regs._HL v

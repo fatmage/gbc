@@ -2,8 +2,7 @@
 
 type instruction = State.t -> State.t * int
 
-(* 8-bit Arithmetic and Logic Instructions *)
-
+(* 8-bit arithmetic and logic instructions *)
 let iADC_Ar8 r8 = fun st ->
   let a, r = State.get_A st, State.get_r8 st r8 in
   let c = State.get_flag st Regs.Flag_c in
@@ -195,21 +194,72 @@ let iXOR_An8 n = fun st ->
   ~z:(res = 0) ~n:false ~h:false ~c:false (),
   2
 
-(*(* 16-bit Arithmetic Instructions *)*)
-(*let iADD_HLr16 = fun r -> Binary ("ADD", str_HL, str_of_r16 r, 1)*)
-(*let iDEC_r16   = fun r -> Unary  ("DEC", str_of_r16 r, 1)*)
-(*let iINC_r16   = fun r -> Unary  ("INC", str_of_r16 r, 1)*)
-(* *)
-(*(* Bit Operations Instructions *)*)
-(*let iBIT_u3r8  = fun u r -> Binary ("BIT", str_of_int u, str_of_r8 r, 2)*)
-(*let iBIT_u3HLp = fun u ->   Binary ("BIT", str_of_int u, strptr_of_r16 HL, 2)*)
-(*let iRES_u3r8  = fun u r -> Binary ("RES", str_of_int u, str_of_r8 r, 2)*)
-(*let iRES_u3HLp = fun u ->   Binary ("RES", str_of_int u, strptr_of_r16 HL, 2)*)
-(*let iSET_u3r8  = fun u r -> Binary ("SET", str_of_int u, str_of_r8 r, 2)*)
-(*let iSET_u3HLp = fun u ->   Binary ("SET", str_of_int u, strptr_of_r16 HL, 2)*)
-(*let iSWAP_r8   = fun r ->   Unary  ("SWAP", str_of_r8 r, 2)*)
-(*let iSWAP_HLp  =            Unary  ("SWAP", strptr_of_r16 HL, 2)*)
-(* *)
+(* 16-bit arithmetic instructions *)
+let iADD_HLr16 r = fun st ->
+  let hl, x = State.get_HL st, State.get_r16 st r in
+  let sum = hl + x in let res = Intops.u16 sum in
+  State.set_flags (State.set_HL st res) ~n:false
+  ~h:(hl land 0xFFF + x land 0xFFF > 0xFFF) ~c:(sum > 0xFFFF) (),
+  2
+
+let iDEC_r16 r = fun st ->
+  let x = State.get_r16 st r in
+  let dec = x - 1 in let res = if dec < 0 then 0xFFFF else dec in
+  State.set_r16 st r res,
+  2
+
+let iINC_r16 r = fun st ->
+  let x = State.get_r16 st r in
+  let inc = x + 1 in let res = if inc > 0xFFFF then 0 else inc in
+  State.set_r16 st r res,
+  2
+
+(* Bit Operations Instructions *)
+let iBIT_u3r8 u r = fun st ->
+  let x = State.get_r8 st r in
+  State.set_flags st ~z:(x land (1 lsl u) = 0) ~n:false ~h:true (),
+  2
+
+let iBIT_u3HLp u = fun st ->
+  let hlp = State.get_HLp st in
+  State.set_flags st ~z:(hlp land (1 lsl u) = 0) ~n:false ~h:true (),
+  3
+
+let iRES_u3r8 u r = fun st ->
+  let x = State.get_r8 st r in
+  let res = x land (lnot (1 lsl u)) in
+  State.set_r8 st r res,
+  2
+
+let iRES_u3HLp u = fun st ->
+  let hlp = State.get_HLp st in
+  let res = hlp land (lnot (1 lsl u)) in
+  State.set_HLp st res,
+  4
+
+let iSET_u3r8 u r = fun st ->
+  let x = State.get_r8 st r in
+  State.set_r8 st r (x lor (1 lsl u)),
+  2
+
+let iSET_u3HLp u = fun st ->
+  let hlp = State.get_HLp st in
+  State.set_HLp st (hlp lor (1 lsl u)),
+  4
+
+let iSWAP_r8 r = fun st ->
+  let x = State.get_r8 st r in
+  let res = ((x land 0xF lsl 4) lor (x land 0xF0 lsr 4)) in
+  State.set_flags (State.set_r8 st r res)
+  ~z:(res = 0) ~n:false ~h:false ~c:false (),
+  2
+let iSWAP_HLp = fun st ->
+  let hlp = State.get_HLp st in
+  let res = ((hlp land 0xF lsl 4) lor (hlp land 0xF lsr 4)) in
+  State.set_flags (State.set_HLp st res)
+  ~z:(res = 0) ~n:false ~h:false ~c:false (),
+  4
+
 (*(* Bit Shift Instructions *)*)
 (*let iRL_r8   = fun r -> Unary   ("RL", str_of_r8 r, 2)*)
 (*let iRL_HLp  =          Unary   ("RL", strptr_of_r16 HL, 2)*)

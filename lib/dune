@@ -1,2 +1,4 @@
 (library
  (name gbc_lib))
+
+(include_subdirs unqualified)

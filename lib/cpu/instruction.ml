@@ -407,7 +407,7 @@ let iLD_rn16 rl n : instruction = fun st ->
   State.set_r16 st rl n,
   Next, 3
 
-let iLD_HLPr8 r : instruction = fun st ->
+let iLD_HLpr8 r : instruction = fun st ->
   State.set_HLp st (State.get_r8 st r),
   Next, 2
 
@@ -641,5 +641,5 @@ let iNOP : instruction = fun st ->
 let iSCF : instruction = fun st ->
   State.set_flags st ~n:false ~h:false ~c:true (), Next, 1
 
-let iSTOP : instruction = fun st ->
+let iSTOP _ : instruction = fun st ->
   {st with speed = not st.speed }, Next, 0

@@ -1,7 +1,7 @@
 open Instruction
 
 let match_prefixed st =
-  match State.Bus.get8 st (st.regs._PC) with
+  match State.Bus.get8 st (st.regs._PC + 1) with
   | 0x00 -> iRLC_r8 B
   | 0x01 -> iRLC_r8 C
   | 0x02 -> iRLC_r8 D

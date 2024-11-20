@@ -2,9 +2,9 @@ type interrupts = Disabled | Enabling | Enabled
 
 type t =
 { regs: Regs.regfile; flags : Regs.flags; ime : interrupts;
-  rom: Rom.S.t; ram : Ram.S.t; wram : Ram.WRAM.t;
-  vram : Ram.VRAM.t; hram : Ram.HRAM.t;
-  oam: Oam.S.t; regio: Ioregs.S.t; ie: Iereg.S.t }
+  rom: Rom.S.t; ram : Ram.S.t; wram : Ram.WRAM.t; vram : Ram.VRAM.t;
+  hram : Ram.HRAM.t; oam: Oam.S.t; regio: Ioregs.S.t; ie: Iereg.S.t;
+  halted : bool; speed: bool }
 
   module Bus = struct
     (* https://gbdev.io/pandocs/Memory_Map.html
@@ -62,10 +62,13 @@ type t =
       | _
         -> failwith "Bus error: address out of range."
 
-      (* PLACEHOLDER *)
-      let get16 = get8
-      (* PLACEHOLDER *)
-      let set16 = set8
+      let get16 st addr =
+        let lo, hi = get8 st addr, get8 st (addr + 1) in
+        hi lsl 8 lor lo
+
+      let set16 st addr v =
+        let lo, hi = v land 0xFF, v land 0xFF00 lsr 8 in
+        set8 (set8 st addr lo) (addr + 1) hi
 
   end
 
@@ -73,7 +76,8 @@ let initial =
   {regs = Regs.initial_regfile; flags = Regs.initial_flags; ime = Disabled;
   rom = Rom.S.empty; ram = Ram.S.empty; wram = Ram.WRAM.empty;
   vram = Ram.VRAM.empty; hram = Ram.HRAM.empty;
-  oam = Oam.S.empty; regio = Ioregs.S.empty; ie = Iereg.S.empty }
+  oam = Oam.S.empty; regio = Ioregs.S.empty; ie = Iereg.S.empty;
+  halted = false; speed = false }
 
 let set_r8 st r v = { st with regs = Regs.set_r8 st.regs r v }
 let set_r16 st rr v = { st with regs = Regs.set_r16 st.regs rr v }

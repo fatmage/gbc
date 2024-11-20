@@ -8,16 +8,15 @@ type condition = Cnz | Cz | Cnc | Cc
 
 (* 8-bit arithmetic and logic instructions *)
 let iADC_Ar8 r8 : instruction = fun st ->
-  let a, r = State.get_A st, State.get_r8 st r8 in
+  let a, r = st.regs._A, State.get_r8 st r8 in
   let c = State.get_flag st Regs.Flag_c in
   let sum = a + r + c in let res = Intops.u8 sum in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
   ~h:(a land 0xF + r land 0xF + c > 0xF) ~c:(sum > 0xFF) (),
   Next, 1
 
-
 let iADC_AHLp : instruction = fun st ->
-  let a = State.get_A st in
+  let a = st.regs._A in
   let hlp = State.get_HLp st in
   let c = State.get_flag st Regs.Flag_c in
   let sum = a + hlp + c in let res = Intops.u8 sum in
@@ -26,21 +25,21 @@ let iADC_AHLp : instruction = fun st ->
   Next, 2
 
 let iADC_An8 n : instruction = fun st ->
-  let a, c = State.get_A st, State.get_flag st (Regs.Flag_c) in
+  let a, c = st.regs._A, State.get_flag st (Regs.Flag_c) in
   let sum = a + n + c in let res = Intops.u8 sum in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
   ~h:(a land 0xF + n land 0xF + c > 0xF) ~c:(sum > 0xFF) (),
   Next, 2
 
 let iADD_Ar8 r8 : instruction = fun st ->
-  let a, r = State.get_A st, State.get_r8 st r8 in
+  let a, r = st.regs._A, State.get_r8 st r8 in
   let sum = a + r in let res = Intops.u8 sum in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
   ~h:(a land 0xF + r land 0xF > 0xF) ~c:(sum > 0xFF) (),
   Next, 1
 
 let iADD_AHLp : instruction = fun st ->
-  let a = State.get_A st in
+  let a = st.regs._A in
   let hlp = State.get_HLp st in
   let sum = a + hlp in let res = Intops.u8 sum in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
@@ -48,46 +47,46 @@ let iADD_AHLp : instruction = fun st ->
   Next, 2
 
 let iADD_An8 n : instruction = fun st ->
-  let a = State.get_A st in
+  let a = st.regs._A in
   let sum = a + n in let res = Intops.u8 sum in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
   ~h:(a land 0xF + n land 0xF > 0xF) ~c:(sum > 0xFF) (),
   Next, 2
 
 let iAND_Ar8 r8 : instruction = fun st ->
-  let result = State.get_A st land State.get_r8 st r8 in
+  let result = st.regs._A land State.get_r8 st r8 in
   State.set_flags (State.set_A st result) ~z:(result = 0) ~n:false
   ~h:true  ~c:false (),
   Next, 1
 
 let iAND_AHLp : instruction = fun st ->
-  let result = State.get_A st land State.get_HLp st in
+  let result = st.regs._A land State.get_HLp st in
   State.set_flags (State.set_A st result) ~z:(result = 0) ~n:false
   ~h:true ~c:false (),
   Next, 2
 
 let iAND_An8 n : instruction = fun st ->
-  let result = State.get_A st land n in
+  let result = st.regs._A land n in
   State.set_flags (State.set_A st result) ~z:(result = 0) ~n:false
   ~h:true ~c:false (),
   Next, 2
 
 let iCP_Ar8 r : instruction = fun st ->
-  let a, y = State.get_A st, State.get_r8 st r in
+  let a, y = st.regs._A, State.get_r8 st r in
   let result = a - y in
   State.set_flags st ~z:(result = 0) ~n:true
   ~h:(a land 0xF < y land 0xF) ~c:(y > a) (),
   Next, 1
 
 let iCP_AHLp : instruction = fun st ->
-  let a, hlp = State.get_A st, State.get_HLp st in
+  let a, hlp = st.regs._A, State.get_HLp st in
   let result = a - hlp in
   State.set_flags st ~z:(result = 0) ~n:true
   ~h:(a land 0xF < hlp land 0xF) ~c:(hlp > a) (),
   Next, 2
 
 let iCP_An8 n : instruction = fun st ->
-  let a = State.get_A st in
+  let a = st.regs._A in
   let result = a - n in
   State.set_flags st ~z:(result = 0) ~n:true
   ~h:(a land 0xF < n land 0xF) ~c:(n > a) (),
@@ -122,79 +121,79 @@ let iINC_HLp : instruction = fun st ->
   Next, 3
 
 let iOR_Ar8 r : instruction = fun st ->
-  let res = State.get_A st lor State.get_r8 st r in
+  let res = st.regs._A lor State.get_r8 st r in
   State.set_flags (State.set_A st res)
   ~z:(res = 0) ~n:false ~h:false ~c:false (),
   Next, 1
 
 let iOR_AHLp : instruction = fun st ->
-  let res = State.get_A st lor State.get_HLp st in
+  let res = st.regs._A lor State.get_HLp st in
   State.set_flags (State.set_A st res)
   ~z:(res = 0) ~n:false ~h:false ~c:false (),
   Next, 2
 
 let iOR_An8 n : instruction = fun st ->
-  let res = State.get_A st lor n in
+  let res = st.regs._A lor n in
   State.set_flags (State.set_A st res)
   ~z:(res = 0) ~n:false ~h:false ~c:false (),
   Next, 2
 
 let iSBC_Ar8 r : instruction = fun st ->
-  let a, x, c = State.get_A st, State.get_r8 st r, State.get_flag st Flag_c in
+  let a, x, c = st.regs._A, State.get_r8 st r, State.get_flag st Flag_c in
   let sub = a - x - c in let res = if sub < 0 then 0x100 + sub else sub in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
   ~h:(a land 0xF < x land 0xF + c) ~c:(sub < 0) (),
   Next, 1
 
 let iSBC_AHLp : instruction = fun st ->
-  let a, hlp, c = State.get_A st, State.get_HLp st, State.get_flag st Flag_c in
+  let a, hlp, c = st.regs._A, State.get_HLp st, State.get_flag st Flag_c in
   let sub = a - hlp - c in let res = if sub < 0 then 0x100 + sub else sub in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
   ~h:(a land 0xF < hlp land 0xF + c) ~c:(sub < 0) (),
   Next, 2
 
 let iSBC_An8 n : instruction = fun st ->
-  let a, c = State.get_A st, State.get_flag st Flag_c in
+  let a, c = st.regs._A, State.get_flag st Flag_c in
   let sub = a - n - c in let res = if sub < 0 then 0x100 + sub else sub in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
   ~h:(a land 0xF < n land 0xF + c) ~c:(sub < 0) (),
   Next, 2
 
 let iSUB_Ar8 r : instruction = fun st ->
-  let a, x = State.get_A st, State.get_r8 st r in
+  let a, x = st.regs._A, State.get_r8 st r in
   let sub = a - x in let res = if sub < 0 then 0x100 + sub else sub in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
   ~h:(a land 0xF < x land 0xF) ~c:(sub < 0) (),
   Next, 1
 
 let iSUB_AHLp : instruction = fun st ->
-  let a, hlp = State.get_A st, State.get_HLp st in
+  let a, hlp = st.regs._A, State.get_HLp st in
   let sub = a - hlp in let res = if sub < 0 then 0x100 + sub else sub in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
   ~h:(a land 0xF < hlp land 0xF) ~c:(sub < 0) (),
   Next, 2
 
 let iSUB_An8 n : instruction = fun st ->
-  let a = State.get_A st in
+  let a = st.regs._A in
   let sub = a - n in let res = if sub < 0 then 0x100 + sub else sub in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
   ~h:(a land 0xF < n land 0xF) ~c:(sub < 0) () ,
   Next, 2
 
 let iXOR_Ar8 r : instruction = fun st ->
-  let res = State.get_A st lxor State.get_r8 st r in
+  let res = st.regs._A lxor State.get_r8 st r in
   State.set_flags (State.set_A st res)
   ~z:(res = 0) ~n:false ~h:false ~c:false (),
   Next, 1
 
 let iXOR_AHLp : instruction = fun st ->
-  let res = State.get_A st lxor State.get_HLp st in
+  let res = st.regs._A lxor State.get_HLp st in
   State.set_flags (State.set_A st res)
   ~z:(res = 0) ~n:false ~h:false ~c:false (),
   Next, 2
 
 let iXOR_An8 n : instruction = fun st ->
-  let res = State.get_A st lxor n in
+  let res = st.regs._A lxor n in
   State.set_flags (State.set_A st res)
   ~z:(res = 0) ~n:false ~h:false ~c:false (),
   Next, 2
@@ -281,7 +280,7 @@ let iRL_HLp : instruction = fun st ->
   Next, 4
 
 let iRLA : instruction = fun st ->
-  let a, c = State.get_A st, State.get_flag st Flag_c in
+  let a, c = st.regs._A, State.get_flag st Flag_c in
   let shifted = a lsl 1 lor c in let res = Intops.u8 shifted in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
   ~h:false ~c:(a land 0x80 > 0) (),
@@ -304,7 +303,7 @@ let iRLC_HLp : instruction = fun st ->
   Next, 4
 
 let iRLCA : instruction = fun st ->
-  let a = State.get_A st in
+  let a = st.regs._A in
   let shifted = a lsl 1 in
   let res = shifted land 0x100 lsr 8 lor shifted |> Intops.u8 in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
@@ -326,7 +325,7 @@ let iRR_HLp : instruction = fun st ->
   Next, 4
 
 let iRRA : instruction = fun st ->
-  let a, c = State.get_A st, State.get_flag st Flag_c in
+  let a, c = st.regs._A, State.get_flag st Flag_c in
   let shifted = a lsr 1 lor (c lsl 7) in let res = Intops.u8 shifted in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
   ~h:false ~c:(a land 0b1 > 0) (),
@@ -347,7 +346,7 @@ let iRRC_HLp : instruction = fun st ->
   Next, 4
 
 let iRRCA : instruction = fun st ->
-  let a = State.get_A st in
+  let a = st.regs._A in
   let res = a lsr 1 lor (a land 0b1 lsl 7) |> Intops.u8 in
   State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
   ~h:false ~c:(a land 0b1 > 0) (),
@@ -421,19 +420,19 @@ let iLD_r8HLp r : instruction = fun st ->
   Next, 2
 
 let iLD_r16pA r : instruction = fun st ->
-  State.Bus.set8 st (State.get_r16 st r) (State.get_A st),
+  State.Bus.set8 st (State.get_r16 st r) (st.regs._A),
   Next, 2
 
 let iLD_n16pA n : instruction = fun st ->
-  State.Bus.set8 st n (State.get_A st),
+  State.Bus.set8 st n (st.regs._A),
   Next, 4
 
 let iLDH_n16pA n : instruction = fun st ->
-  State.Bus.set8 st (0xFF00 + n) (State.get_A st),
+  State.Bus.set8 st (0xFF00 + n) (st.regs._A),
   Next, 3
 
 let iLDH_CpA : instruction = fun st ->
-  State.Bus.set8 st (State.get_r8 st C + 0xFF00) (State.get_A st),
+  State.Bus.set8 st (st.regs._C + 0xFF00) (st.regs._A),
   Next, 2
 
 let iLD_Ar16p r : instruction = fun st ->
@@ -449,16 +448,16 @@ let iLDH_An16p n : instruction = fun st ->
   Next, 3
 
 let iLDH_ACp : instruction = fun st ->
-  State.set_A st (State.Bus.get8 st (State.get_r8 st C + 0xFF00)),
+  State.set_A st (State.Bus.get8 st (st.regs._C + 0xFF00)),
   Next, 2
 
 let iLD_HLIpA : instruction = fun st ->
-  let st' = State.set_HLp st (State.get_A st) in
+  let st' = State.set_HLp st (st.regs._A) in
   State.set_HL st' (State.get_HL st' + 1 |> Intops.u16),
   Next, 2
 
 let iLD_HLDpA : instruction = fun st ->
-  let st' = State.set_HLp st (State.get_A st) in
+  let st' = State.set_HLp st (st.regs._A) in
   let res = State.get_HL st' - 1 in
   State.set_HL st' (if res < 0 then 0xFFFF else res),
   Next, 2
@@ -598,11 +597,27 @@ let iCCF : instruction = fun st ->
   Next, 1
 
 let iCPL : instruction = fun st ->
-  State.set_A st (State.get_A st |> lnot),
+  State.set_A st (st.regs._A |> lnot),
   Next, 1
 
-(* PLACEHOLDER PLACEHOLDER PLACEHOLDER TODO TODO TODO PLACEHOLDER *)
-let iDAA : instruction = fun st -> st, Next, 1
+(* May be wrong *)
+let iDAA : instruction = fun st ->
+  let n, h = State.get_flag st Flag_n, State.get_flag st Flag_h in
+  let a, c = st.regs._A, State.get_flag st Flag_c in
+  let a' =
+    match n with
+    | 0 ->
+      let x =
+        if c == 1 || a > 0x99 then a + 0x60 else a in
+        if h  == 1|| (x land 0x0F) > 0x09 then x + 0x06 else x
+    | 1 ->
+      let x =
+        if c == 1 then a - 0x60 else a in
+        if h == 1 then x - 0x06 else x
+  in
+  State.set_flags (State.set_A st a') ~z:(a = 0) ~h:false
+  ~c:(c == 1 || a > 0x99) (),
+  Next, 1
 
 let iDI : instruction = fun st ->
   { st with ime = Disabled }, Next, 1
@@ -610,8 +625,15 @@ let iDI : instruction = fun st ->
 let iEI : instruction = fun st ->
   {st with ime = Enabling }, Next, 1
 
-(* PLACEHOLDER PLACEHOLDER PLACEHOLDER TODO TODO TODO PLACEHOLDER *)
-let iHALT : instruction = fun st -> st, Next, 1
+let iHALT : instruction = fun st ->
+  match st.ime with
+  | Enabled -> { st with halted = true }, Next, 0
+  | _       ->
+    let _if, _ie = State.Bus.get8 st 0xFF0F, State.Bus.get8 st 0xFFFF in
+    if _if land _ie > 0
+    then { st with halted = true }, Next, 0
+    (* HALT BUG TODO *)
+    else st, Next, 0
 
 let iNOP : instruction = fun st ->
   st, Next, 1
@@ -619,5 +641,5 @@ let iNOP : instruction = fun st ->
 let iSCF : instruction = fun st ->
   State.set_flags st ~n:false ~h:false ~c:true (), Next, 1
 
-(* PLACEHOLDER PLACEHOLDER PLACEHOLDER TODO TODO TODO PLACEHOLDER *)
-let iSTOP : instruction = fun st -> st, Next, 1
+let iSTOP : instruction = fun st ->
+  {st with speed = not st.speed }, Next, 0

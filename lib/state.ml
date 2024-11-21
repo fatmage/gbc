@@ -18,7 +18,7 @@ type t =
     E000	FDFF	Echo RAM (mirror of C000–DDFF)	Nintendo says use of this area is prohibited.
     FE00	FE9F	Object attribute memory (OAM)
     FEA0	FEFF	Not Usable	Nintendo says use of this area is prohibited.
-    FF00	FF7F	addr/O Registers
+    FF00	FF7F	I/O Registers
     FF80	FFFE	High RAM (HRAM)
     FFFF	FFFF	Interrupt Enable register (IE)
     *)

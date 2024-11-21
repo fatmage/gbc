@@ -1,1 +1,1 @@
-module S = Ram.EightKB
+module S = Ram.S

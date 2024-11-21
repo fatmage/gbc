@@ -1,5 +1,3 @@
-module FourKB : Addressable.S
-module EightKB : Addressable.S
 
 module type RAM = sig
 include Addressable.S

@@ -14,11 +14,17 @@
 *)
 
 
+module Joypad = struct
+
+end
+
+
 module S = struct
 
   type t = {joypad : int; iflag : int}
 
   let in_range a n b = a <= n && n <= b
+  let empty = { joypad = 0; iflag = 0 }
 
   let get r i =
     match i with
@@ -46,6 +52,7 @@ module S = struct
     | 0xFF70 -> 0
 
   let set r i v =
+    match i with
     (* Joypad *)
     | 0xFF00 -> r
     (* Serial data transfer - unimplemented *)
@@ -56,7 +63,7 @@ module S = struct
     | 0xFF0F -> r
     (* Audio - TODO *)
     | i when in_range 0xFF10 i 0xFF26 -> r
-    (* Wave pattern - TODO *)
+    (* Wave pattern -    TODO *)
     | i when in_range 0xFF30 i 0xFF3F -> r
     (* LCD Control, Status, Position, Scrolling, and Palettes - TODO, maybe move *)
     | i when in_range 0xFF40 i 0xFF4B -> r

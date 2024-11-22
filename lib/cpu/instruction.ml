@@ -643,3 +643,9 @@ let iSCF : instruction = fun st ->
 
 let iSTOP _ : instruction = fun st ->
   {st with speed = not st.speed }, Next, 0
+
+(* Not an actual instruction *)
+
+let interrupt_service_routine handler : instruction = fun st ->
+  State.set_PC (State.set_SPp (State.dec_SP st) (State.get_PC st)) handler,
+  Jump, 5

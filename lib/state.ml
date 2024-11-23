@@ -5,12 +5,12 @@ type interrupts = Disabled | Enabling | Enabled
 
 type t =
   {
-    regs: Regs.regfile; flags : Regs.flags; ime : interrupts;
+    regs: Regs.regfile; flags : Regs.flags;
     rom: Rom.S.t; ram : RAM.t; wram : WRAM.t; vram : VRAM.t;
     hram : HRAM.t; oam: Oam.S.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; lcd : LCDControl.t; palettes : Palettes.t;
-    ie: IE.t; halted : bool; speed: bool
+    ie: IE.t; halted : bool; speed: bool; ime : interrupts;
   }
 
 module Bus = struct
@@ -42,8 +42,7 @@ module Bus = struct
       -> RAM.get st.ram addr
     | _ when WRAM.in_range addr (* WRAM *)
       -> WRAM.get st.wram addr
-    | _ when WRAM.in_range addr (* Echo RAM *)
-      -> WRAM.get st.wram addr
+    (* ECHO RAM *)
     | _ when Oam.S.in_range addr (* OAM *)
       -> Oam.S.get st.oam addr
     (* I/O Registers *)
@@ -77,31 +76,65 @@ module Bus = struct
 
   let set8 st addr v =
     match addr with
-    | addr when addr <= 0
-      -> failwith "Bus error: can't get memory at negative address."
-    | addr when addr < 8192
-      -> {st with rom = Rom.S.set st.rom addr v}
-    | addr when addr < 16384
-      -> {st with ram = S.set st.ram (addr - 8192) v}
+    | _ when Rom.S.in_range addr (* ROM *)
+      -> { st with rom = Rom.S.set st.rom addr v }
+    | _ when VRAM.in_range addr (* VRAM *)
+      -> { st with vram = VRAM.set st.vram addr v }
+    | _ when RAM.in_range addr (* External RAM *)
+      -> { st with ram = RAM.set st.ram addr v }
+    | _ when WRAM.in_range addr (* WRAM *)
+      -> { st with wram = WRAM.set st.wram addr v }
+    (* ECHO RAM *)
+    | _ when Oam.S.in_range addr (* OAM *)
+      -> { st with oam = Oam.S.set st.oam addr v }
+    (* I/O Registers *)
+    | _ when Joypad.in_range addr (* Joypad *)
+      -> { st with joypad = Joypad.set st.joypad addr v }
+    | _ when Serial.in_range addr (* Serial transfer *)
+      -> { st with serial = Serial.set st.serial addr v }
+    | _ when Timer.in_range addr (* Timer and divider *)
+      -> { st with timer = Timer.set st.timer addr v }
+    | _ when Interrupts.in_range addr (* Interrupts *)
+      -> { st with iflag = Interrupts.set st.iflag addr v }
+    | _ when Audio.in_range addr (* Audio *)
+      -> { st with audio = Audio.set st.audio addr v }
+    | _ when WavePattern.in_range addr (* Wave pattern *)
+      -> { st with wave = WavePattern.set st.wave addr v }
+    | _ when LCDControl.in_range addr (* LCD control *)
+      -> { st with lcd = LCDControl.set st.lcd addr v }
+    (* VRAM bank select *)
+    (* 0xFF50 - set to non-zero to disable boot ROM *)
+    (* VRAM DMA *)
+    | _ when Palettes.in_range addr (* BG/OBJ palettes *)
+      -> { st with palettes = Palettes.set st.palettes addr v }
+    (* WRAM bank select *)
+    | _ when HRAM.in_range addr (* HRAM *)
+      -> { st with hram = HRAM.set st.hram addr v }
+    | _ when IE.in_range addr (* Interrupt Enable register *)
+      -> { st with ie = IE.set st.ie addr v }
     | _
       -> failwith "Bus error: address out of range."
 
   let get16 st addr =
-    let lo, hi = get8 st addr, get8 st (addr + 1) in
+    let hi, lo = get8 st addr, get8 st (addr + 1) in
     hi lsl 8 lor lo
 
   let set16 st addr v =
-    let lo, hi = v land 0xFF, v land 0xFF00 lsr 8 in
-    set8 (set8 st addr lo) (addr + 1) hi
+    let hi, lo = v land 0xFF00 lsr 8, v land 0xFF in
+    set8 (set8 st addr hi) (addr + 1) lo
 
 end
 
 let initial =
-  {regs = Regs.initial_regfile; flags = Regs.initial_flags; ime = Disabled;
-  rom = Rom.S.empty; ram = S.empty; wram = WRAM.empty;
-  vram = VRAM.empty; hram = HRAM.empty;
-  oam = Oam.S.empty; regio = RAMS.empty; ie = Iereg.S.empty;
-  halted = false; speed = false }
+  {
+    regs = Regs.initial_regfile; flags = Regs.initial_flags;
+    rom = Rom.S.empty; ram = RAM.empty; wram = WRAM.empty; vram = VRAM.empty;
+    hram = HRAM.empty; oam = Oam.S.empty; joypad = Joypad.empty;
+    serial = Serial.empty; timer = Timer.empty; iflag = Interrupts.empty;
+    audio = Audio.empty; wave = WavePattern.empty; lcd = LCDControl.empty;
+    palettes = Palettes.empty; ie = IE.empty; halted = false; speed = false;
+    ime = Disabled
+  }
 
 let set_r8 st r v = { st with regs = Regs.set_r8 st.regs r v }
 let set_r16 st rr v = { st with regs = Regs.set_r16 st.regs rr v }

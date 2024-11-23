@@ -13,69 +13,98 @@
   $FF70   	      WRAM Bank Select
 *)
 
-
 module Joypad = struct
-
+  type t = int
+  let empty = 0
+  let get m _ = m
+  let set _ _ v = v
+  let in_range v = v = 0xFF00
 end
 
+(* TODO *)
+module Serial = struct
+  type t = int
+  let empty = 0
+  let get m _ = m
+  let set _ _ v = v
+  let in_range v = v = 0xFF01 || v = 0xFF02
+end
 
-module S = struct
-
-  type t = {joypad : int; iflag : int}
-
-  let in_range a n b = a <= n && n <= b
-  let empty = { joypad = 0; iflag = 0 }
-
-  let get r i =
+(* TODO *)
+module Timer = struct
+  type t = { div : int; tima : int; tma : int; tac : int }
+  let empty = { div = 0; tima = 0; tma = 0; tac = 0 }
+  let reset_div m = { m with div = 0 }
+  let get m i =
     match i with
-    (* Joypad *)
-    | 0xFF00 -> r.joypad
-    (* Serial data transfer - unimplemented *)
-    | 0xFF01 | 0xFF02 -> 0
-    (* Timer and divider *)
-    | i when in_range 0xFF04 i 0xFF07 -> 0
-    (* Interrupts *)
-    | 0xFF0F -> r.iflag
-    (* Audio - TODO *)
-    | i when in_range 0xFF10 i 0xFF26 -> 0
-    (* Wave pattern - TODO *)
-    | i when in_range 0xFF30 i 0xFF3F -> 0
-    (* LCD Control, Status, Position, Scrolling, and Palettes - TODO, maybe move *)
-    | i when in_range 0xFF40 i 0xFF4B -> 0
-    (* VRAM bank select  TODO: move to VRAM *)
-    | 0xFF4F -> 0
-    (* VRAM DMA          TODO: move to VRAM *)
-    | i when in_range 0xFF51 i 0xFF55 -> 0
-    (* BG / OBJ palettes TODO: move somewhere else *)
-    | i when in_range 0xFF68 i 0xFF6B -> 0
-    (* WRAM bank select  TODO: move to WRAM *)
-    | 0xFF70 -> 0
-
-  let set r i v =
+    | 0xFF04 -> m.div
+    | 0xFF05 -> m.tima
+    | 0xFF06 -> m.tma
+    | 0xFF07 -> m.tac
+  let set m i v =
     match i with
-    (* Joypad *)
-    | 0xFF00 -> r
-    (* Serial data transfer - unimplemented *)
-    | 0xFF01 | 0xFF02 -> r
-    (* Timer and divider *)
-    | i when in_range 0xFF04 i 0xFF07 -> r
-    (* Interrupts *)
-    | 0xFF0F -> r
-    (* Audio - TODO *)
-    | i when in_range 0xFF10 i 0xFF26 -> r
-    (* Wave pattern -    TODO *)
-    | i when in_range 0xFF30 i 0xFF3F -> r
-    (* LCD Control, Status, Position, Scrolling, and Palettes - TODO, maybe move *)
-    | i when in_range 0xFF40 i 0xFF4B -> r
-    (* VRAM bank select  TODO: move to VRAM *)
-    | 0xFF4F -> r
-    (* VRAM DMA          TODO: move to VRAM *)
-    | i when in_range 0xFF51 i 0xFF55 -> r
-    (* BG / OBJ palettes TODO: move somewhere else *)
-    | i when in_range 0xFF68 i 0xFF6B -> r
-    (* WRAM bank select  TODO: move to WRAM *)
-    | 0xFF70 -> r
+    | 0xFF04 -> { m with div  = 0 }
+    | 0xFF05 -> { m with tima = v }
+    | 0xFF06 -> { m with tma  = v }
+    | 0xFF07 -> { m with tac  = v }
+  let in_range i = 0xFF04 <= i && i <= 0xFF07
+end
 
-  let in_range n = in_range 0xFF00 n 0xFF7F
+(* TODO *)
+module Interrupts = struct
+  type t = int
+  let empty = 0
+  let get m _ = m
+  let set _ _ v = v
+  let in_range = (=) 0xFF0F
+end
 
+(* TODO *)
+module Audio = struct
+  type t = int
+  let empty = 0
+  let get _ _ = 0
+  let set _ _ _ = 0
+  let in_range i = 0xFF10 <= i && i <= 0xFF26
+end
+
+(* TODO *)
+module WavePattern = struct
+  type t = int
+  let empty = 0
+  let get _ _ = 0
+  let set _ _ _ = 0
+  let in_range i = 0xFF30 <= i && i <= 0xFF3F
+end
+
+(* TODO *)
+module LCDControl = struct
+  type t = int
+  let empty = 0
+  let get _ _ = 0
+  let set _ _ _ = 0
+  let in_range i = 0xFF40 <= i && i <= 0xFF4B
+end
+
+(* VRAM bank select - in VRAM *)
+
+(* VRAM DMA - in VRAM *)
+
+(* TODO *)
+module Palettes = struct
+  type t = int
+  let empty = 0
+  let get _ _ = 0
+  let set _ _ _ = 0
+  let in_range i = 0xFF68 <= i && i <= 0xFF6B
+end
+
+(* WRAM bank select - in WRAM *)
+
+module IE = struct
+  type t = int
+  let empty = 0
+  let get m _ = m
+  let set m _ v = v
+  let in_range i = i = 0xFFFF
 end

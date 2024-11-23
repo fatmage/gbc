@@ -1,3 +1,0 @@
-
-
-module S = Ram.S

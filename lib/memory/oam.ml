@@ -1,1 +1,1 @@
-module S = Ram.S
+module S = Ram.RAM

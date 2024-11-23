@@ -77,7 +77,7 @@ module type RAM = sig
   include Addressable.S
 end
 
-module S = struct
+module RAM = struct
   module M = (val make_chunk 8912 0xA000)
   include M
 end

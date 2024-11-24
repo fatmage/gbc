@@ -25,6 +25,11 @@ module Timer : sig
   include Addressable.S
 
   val reset_div : t -> t
+  val inc_div : t -> t
+  val inc_tima : t -> t
+  val tac_enabled : t -> bool
+  val tima_mcyc : t -> int
+  val mcyc_to_hz : int -> bool -> int
 end
 
 module Interrupts : sig

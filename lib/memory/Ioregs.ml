@@ -44,11 +44,33 @@ module Timer = struct
   let set m i v =
     match i with
     | 0xFF04 -> { m with div  = 0 }
-    | 0xFF05 -> { m with tima = v }
+    | 0xFF05 ->
+      {
+        m with tima =
+        match v with
+        | 0b00 -> 256
+        | 0b01 -> 4
+        | 0b10 -> 16
+        | 0b11 -> 64
+      }
     | 0xFF06 -> { m with tma  = v }
     | 0xFF07 -> { m with tac  = v }
 
   let reset_div m = { m with div = 0 }
+
+  let inc_div m = { m with div = m.div + 1 land 0xFF }
+
+  let inc_tima m =
+    let res = m.tima + 1 in
+    if res > 0xFF then { m with tima = m.tma }, 1 else { m with tima = res }, 0
+
+  let tac_enabled m = m.tac land 0b100 > 0
+
+  let tima_mcyc m = m.tima
+
+  let mcyc_to_hz v double =
+    if double then 1048576 / v else 2097152 / v
+
   let in_range i = 0xFF04 <= i && i <= 0xFF07
 end
 

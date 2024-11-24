@@ -83,8 +83,41 @@ module RAM = struct
 end
 
 module WRAM = struct
-  module M = (val make_chunk 8912 0xC000)
-  include M
+  module Bank0 = (val make_chunk 4096 0xC000)
+  module Banks = (val make_chunk 4096 0xD000)
+
+  type t = { b0: Bank0.t; bs: Banks.t list; svbk : int }
+
+  let empty =
+    { b0 = Bank0.empty; bs = List.init 7 (fun _ -> Banks.empty); svbk = 0 }
+
+  let get m i =
+    match m,i with
+    | {svbk; _}, 0xFF70 -> svbk
+    | {b0; _}, i when Bank0.in_range i -> Bank0.get b0 i
+    | {b0;bs=(b::bs);_}, i -> Banks.get b i
+
+  let rec rot (x::xs) =
+    function
+    | 0            -> x::xs
+    | i when i < 0 -> rot (xs @ [x]) (i + 1)
+    | i            -> rot (x::xs) (7 - i)
+
+  let set m i v =
+    match m,i with
+    | {b0;bs;svbk}, 0xFF70 ->
+      if v land 0b111 = svbk land 0b111 then
+        { m with svbk=v }
+      else
+        let diff = svbk land 0b111 - v land 0b111 in
+        { b0; bs = rot bs diff; svbk=v }
+    | {b0;_}, i when Bank0.in_range i ->
+      { m with b0 = Bank0.set b0 i v }
+    | {bs = b::bs; _}, i ->
+      { m with bs = Banks.set b i v :: bs }
+
+  let in_range i = Bank0.in_range i || Banks.in_range i || i = 0xFF70
+
 end
 
 module HRAM = struct
@@ -93,6 +126,23 @@ module HRAM = struct
 end
 
 module VRAM = struct
-  module M = (val make_chunk 8912 0x8000)
-  include M
+  module Bank = (val make_chunk 8912 0x8000)
+
+  type t = Bank.t * Bank.t * int
+
+  let empty = Bank.empty, Bank.empty
+
+  let get m i =
+    match m, i with
+    | (_,_,bank), 0xFF4F -> bank lor 0b11111110
+    | (m,_,_), i -> Bank.get m i
+
+  let set m i v =
+    match m, i with
+    | (b1, b2, bank), 0xFF4F ->
+      if v land 1 = bank then m else (b2, b1, v land 1)
+    | (b1 ,b2, bank), i -> (Bank.set b1 i v, b2, bank)
+
+  let in_range i = Bank.in_range i || i = 0xFF4F
+
 end

@@ -30,8 +30,6 @@ module Bus = struct
   FFFF	FFFF	Interrupt Enable register (IE)
   *)
 
-  let in_range l v r = l <= v && v <= r
-
   let get8 st addr =
     match addr with
     | _ when Rom.S.in_range addr (* ROM *)

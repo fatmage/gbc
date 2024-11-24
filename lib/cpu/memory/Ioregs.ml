@@ -32,15 +32,17 @@ end
 
 (* TODO *)
 module Timer = struct
-  type t = { div : int; tima : int; tma : int; tac : int }
-  let empty = { div = 0; tima = 0; tma = 0; tac = 0 }
+  type t = { div : int; tima : int; tma : int; tac : int; speed : bool }
+  let empty = { div = 0; tima = 0; tma = 0; tac = 0; speed = false }
   let reset_div m = { m with div = 0 }
+
   let get m i =
     match i with
     | 0xFF04 -> m.div
     | 0xFF05 -> m.tima
     | 0xFF06 -> m.tma
     | 0xFF07 -> m.tac
+
   let set m i v =
     match i with
     | 0xFF04 -> { m with div  = 0 }
@@ -62,15 +64,17 @@ module Timer = struct
 
   let inc_tima m =
     let res = m.tima + 1 in
-    if res > 0xFF then { m with tima = m.tma }, 1 else { m with tima = res }, 0
+    if res > 0xFF then
+      { m with tima = m.tma }, true
+    else
+      { m with tima = res }, false
 
   let tac_enabled m = m.tac land 0b100 > 0
-
   let tima_mcyc m = m.tima
-
   let mcyc_to_hz v double =
     if double then 1048576 / v else 2097152 / v
-
+  let double_speed m = m.speed
+  let switch_speed m = { m with speed = not m.speed }
   let in_range i = 0xFF04 <= i && i <= 0xFF07
 end
 

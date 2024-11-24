@@ -10,7 +10,7 @@ type t =
     hram : HRAM.t; oam: Oam.S.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; lcd : LCDControl.t; palettes : Palettes.t;
-    ie: IE.t; halted : bool; speed: bool; ime : interrupts;
+    ie: IE.t; halted : bool; ime : interrupts;
   }
 
 module Bus = struct
@@ -130,8 +130,7 @@ let initial =
     hram = HRAM.empty; oam = Oam.S.empty; joypad = Joypad.empty;
     serial = Serial.empty; timer = Timer.empty; iflag = Interrupts.empty;
     audio = Audio.empty; wave = WavePattern.empty; lcd = LCDControl.empty;
-    palettes = Palettes.empty; ie = IE.empty; halted = false; speed = false;
-    ime = Disabled
+    palettes = Palettes.empty; ie = IE.empty; halted = false; ime = Disabled
   }
 
 let set_r8 st r v = { st with regs = Regs.set_r8 st.regs r v }
@@ -166,7 +165,4 @@ let set_SPp st v = Bus.set16 st st.regs._SP v
 
 let inc_SP st = { st with regs = { st.regs with _SP = st.regs._SP + 2 } }
 let dec_SP st = { st with regs = { st.regs with _SP = st.regs._SP - 2 } }
-
 let adv_PC st c = { st with regs = { st.regs with _PC = st.regs._PC + c } }
-
-let reset_div st = { st with timer = Timer.reset_div st.timer }

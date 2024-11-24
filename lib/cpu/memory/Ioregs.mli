@@ -26,10 +26,11 @@ module Timer : sig
 
   val reset_div : t -> t
   val inc_div : t -> t
-  val inc_tima : t -> t
+  val inc_tima : t -> t * bool
   val tac_enabled : t -> bool
   val tima_mcyc : t -> int
   val mcyc_to_hz : int -> bool -> int
+  val switch_speed : t -> t
 end
 
 module Interrupts : sig

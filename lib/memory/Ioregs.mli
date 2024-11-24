@@ -23,6 +23,8 @@ end
 
 module Timer : sig
   include Addressable.S
+
+  val reset_div : t -> t
 end
 
 module Interrupts : sig

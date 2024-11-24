@@ -168,3 +168,5 @@ let inc_SP st = { st with regs = { st.regs with _SP = st.regs._SP + 2 } }
 let dec_SP st = { st with regs = { st.regs with _SP = st.regs._SP - 2 } }
 
 let adv_PC st c = { st with regs = { st.regs with _PC = st.regs._PC + c } }
+
+let reset_div st = { st with timer = Timer.reset_div st.timer }

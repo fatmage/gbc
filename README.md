@@ -1,7 +1,7 @@
 # gbc
 
 
-### Roadmap:
+## Roadmap:
 
  - implement addressable memory components
 

@@ -47,6 +47,8 @@ module Timer = struct
     | 0xFF05 -> { m with tima = v }
     | 0xFF06 -> { m with tma  = v }
     | 0xFF07 -> { m with tac  = v }
+
+  let reset_div m = { m with div = 0 }
   let in_range i = 0xFF04 <= i && i <= 0xFF07
 end
 
@@ -55,7 +57,7 @@ module Interrupts = struct
   type t = int
   let empty = 0
   let get m _ = m
-  let set _ _ v = v
+  let set _ _ v = v land 0b11111
   let in_range = (=) 0xFF0F
 end
 
@@ -105,6 +107,6 @@ module IE = struct
   type t = int
   let empty = 0
   let get m _ = m
-  let set m _ v = v
+  let set m _ v = v land 0b11111
   let in_range i = i = 0xFFFF
 end

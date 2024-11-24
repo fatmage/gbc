@@ -130,12 +130,12 @@ module VRAM = struct
 
   type t = Bank.t * Bank.t * int
 
-  let empty = Bank.empty, Bank.empty
+  let empty = Bank.empty, Bank.empty, 0
 
   let get m i =
     match m, i with
     | (_,_,bank), 0xFF4F -> bank lor 0b11111110
-    | (m,_,_), i -> Bank.get m i
+    | (m,_,_), i         -> Bank.get m i
 
   let set m i v =
     match m, i with

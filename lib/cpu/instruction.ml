@@ -642,7 +642,7 @@ let iSCF : instruction = fun st ->
   State.set_flags st ~n:false ~h:false ~c:true (), Next, 1
 
 let iSTOP _ : instruction = fun st ->
-  {st with speed = not st.speed }, Next, 0
+  { (State.reset_div st) with speed = not st.speed }, Next, 0
 
 
 (* Not an actual instruction *)

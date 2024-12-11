@@ -3,7 +3,7 @@
 
 ## Roadmap:
 
- - implement addressable memory components
+ - implement addressable memory components related to graphics
 
  - implement cartridge header reading
 
@@ -18,6 +18,11 @@
 
  - controls
 
+ - functional features - debugger taking advantage of immutable state
+
+ ### Additional features
+
  - apu
 
- - functional features
+ - dmg compatibility - change existing modules into functors and implement
+   dmg compatible versions

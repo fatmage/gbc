@@ -10,7 +10,7 @@ let rec pow a =
 
 (* 4th version - bytes in nodes with implicit inorder indexing *)
 
-let make_chunk size start :(module Addressable.S) =
+let make_chunk size start : (module Addressable.S) =
   (module struct
 
   type t = Leaf | Node of int * t * int (* u8 *) * t | Cap of int (* u8 *) * t
@@ -123,26 +123,4 @@ end
 module HRAM = struct
   module M = (val make_chunk 126 0xFF80)
   include M
-end
-
-module VRAM = struct
-  module Bank = (val make_chunk 8912 0x8000)
-
-  type t = Bank.t * Bank.t * int
-
-  let empty = Bank.empty, Bank.empty, 0
-
-  let get m i =
-    match m, i with
-    | (_,_,bank), 0xFF4F -> bank lor 0b11111110
-    | (m,_,_), i         -> Bank.get m i
-
-  let set m i v =
-    match m, i with
-    | (b1, b2, bank), 0xFF4F ->
-      if v land 1 = bank then m else (b2, b1, v land 1)
-    | (b1 ,b2, bank), i -> (Bank.set b1 i v, b2, bank)
-
-  let in_range i = Bank.in_range i || i = 0xFF4F
-
 end

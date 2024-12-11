@@ -6,11 +6,10 @@ type interrupts = Disabled | Enabling | Enabled
 type t =
   {
     regs: Regs.regfile; flags : Regs.flags;
-    rom: Rom.S.t; ram : RAM.t; wram : WRAM.t; vram : VRAM.t;
-    hram : HRAM.t; oam: Oam.S.t; joypad : Joypad.t; serial: Serial.t;
+    rom: Rom.S.t; ram : RAM.t; wram : WRAM.t; gpu_mem : Gpu_mem.t;
+    hram : HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
-    wave : WavePattern.t; lcd : LCDControl.t; palettes : Palettes.t;
-    ie: IE.t; halted : bool; ime : interrupts;
+    wave : WavePattern.t; ie: IE.t; halted : bool; ime : interrupts;
   }
 
 module Bus = struct
@@ -34,15 +33,14 @@ module Bus = struct
     match addr with
     | _ when Rom.S.in_range addr (* ROM *)
       -> Rom.S.get st.rom addr
-    | _ when VRAM.in_range addr (* VRAM *)
-      -> VRAM.get st.vram addr
+    | _ when Gpu_mem.in_range addr (* VRAM, OAM, LCD control, palettes *)
+      -> Gpu_mem.get st.gpu_mem addr
     | _ when RAM.in_range addr (* External RAM *)
       -> RAM.get st.ram addr
     | _ when WRAM.in_range addr (* WRAM *)
       -> WRAM.get st.wram addr
     (* ECHO RAM *)
-    | _ when Oam.S.in_range addr (* OAM *)
-      -> Oam.S.get st.oam addr
+    (* OAM *)
     (* I/O Registers *)
     | _ when Joypad.in_range addr (* Joypad *)
       -> Joypad.get st.joypad addr
@@ -56,13 +54,11 @@ module Bus = struct
       -> Audio.get st.audio addr
     | _ when WavePattern.in_range addr (* Wave pattern *)
       -> WavePattern.get st.wave addr
-    | _ when LCDControl.in_range addr (* LCD control *)
-      -> LCDControl.get st.lcd addr
+    (* LCD control *)
     (* VRAM bank select *)
     (* 0xFF50 - set to non-zero to disable boot ROM *)
     (* VRAM DMA *)
-    | _ when Palettes.in_range addr (* BG/OBJ palettes *)
-      -> Palettes.get st.palettes addr
+    (* BG/OBJ palettes *)
     (* WRAM bank select *)
     | _ when HRAM.in_range addr (* HRAM *)
       -> HRAM.get st.hram addr
@@ -76,15 +72,14 @@ module Bus = struct
     match addr with
     | _ when Rom.S.in_range addr (* ROM *)
       -> { st with rom = Rom.S.set st.rom addr v }
-    | _ when VRAM.in_range addr (* VRAM *)
-      -> { st with vram = VRAM.set st.vram addr v }
+    | _ when Gpu_mem.VRAM.in_range addr (* VRAM, OAM, LCD control, palettes *)
+      -> { st with gpu_mem = Gpu_mem.set st.gpu_mem addr v }
     | _ when RAM.in_range addr (* External RAM *)
       -> { st with ram = RAM.set st.ram addr v }
     | _ when WRAM.in_range addr (* WRAM *)
       -> { st with wram = WRAM.set st.wram addr v }
     (* ECHO RAM *)
-    | _ when Oam.S.in_range addr (* OAM *)
-      -> { st with oam = Oam.S.set st.oam addr v }
+    (* OAM *)
     (* I/O Registers *)
     | _ when Joypad.in_range addr (* Joypad *)
       -> { st with joypad = Joypad.set st.joypad addr v }
@@ -98,13 +93,11 @@ module Bus = struct
       -> { st with audio = Audio.set st.audio addr v }
     | _ when WavePattern.in_range addr (* Wave pattern *)
       -> { st with wave = WavePattern.set st.wave addr v }
-    | _ when LCDControl.in_range addr (* LCD control *)
-      -> { st with lcd = LCDControl.set st.lcd addr v }
+    (* LCD control *)
     (* VRAM bank select *)
     (* 0xFF50 - set to non-zero to disable boot ROM *)
     (* VRAM DMA *)
-    | _ when Palettes.in_range addr (* BG/OBJ palettes *)
-      -> { st with palettes = Palettes.set st.palettes addr v }
+    (* BG/OBJ palettes *)
     (* WRAM bank select *)
     | _ when HRAM.in_range addr (* HRAM *)
       -> { st with hram = HRAM.set st.hram addr v }
@@ -126,11 +119,11 @@ end
 let initial =
   {
     regs = Regs.initial_regfile; flags = Regs.initial_flags;
-    rom = Rom.S.empty; ram = RAM.empty; wram = WRAM.empty; vram = VRAM.empty;
-    hram = HRAM.empty; oam = Oam.S.empty; joypad = Joypad.empty;
+    rom = Rom.S.empty; ram = RAM.empty; wram = WRAM.empty;
+    gpu_mem = Gpu_mem.empty; hram = HRAM.empty; joypad = Joypad.empty;
     serial = Serial.empty; timer = Timer.empty; iflag = Interrupts.empty;
-    audio = Audio.empty; wave = WavePattern.empty; lcd = LCDControl.empty;
-    palettes = Palettes.empty; ie = IE.empty; halted = false; ime = Disabled
+    audio = Audio.empty; wave = WavePattern.empty;
+    ie = IE.empty; halted = false; ime = Disabled
   }
 
 let set_r8 st r v = { st with regs = Regs.set_r8 st.regs r v }

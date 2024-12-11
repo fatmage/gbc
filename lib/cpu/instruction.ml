@@ -609,7 +609,7 @@ let iDAA : instruction = fun st ->
     | 0 ->
       let x =
         if c == 1 || a > 0x99 then a + 0x60 else a in
-        if h  == 1|| (x land 0x0F) > 0x09 then x + 0x06 else x
+        if h == 1 || (x land 0x0F) > 0x09 then x + 0x06 else x
     | 1 ->
       let x =
         if c == 1 then a - 0x60 else a in

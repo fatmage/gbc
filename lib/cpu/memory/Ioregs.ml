@@ -30,7 +30,6 @@ module Serial = struct
   let in_range v = v = 0xFF01 || v = 0xFF02
 end
 
-(* TODO *)
 module Timer = struct
   type t = { div : int; tima : int; tma : int; tac : int; speed : bool }
   let empty = { div = 0; tima = 0; tma = 0; tac = 0; speed = false }
@@ -78,7 +77,6 @@ module Timer = struct
   let in_range i = 0xFF04 <= i && i <= 0xFF07
 end
 
-(* TODO *)
 module Interrupts = struct
   type t = int
   let empty = 0
@@ -105,27 +103,13 @@ module WavePattern = struct
   let in_range i = 0xFF30 <= i && i <= 0xFF3F
 end
 
-(* TODO *)
-module LCDControl = struct
-  type t = int
-  let empty = 0
-  let get _ _ = 0
-  let set _ _ _ = 0
-  let in_range i = 0xFF40 <= i && i <= 0xFF4B
-end
+(* LCD Control - in graphics *)
 
 (* VRAM bank select - in VRAM *)
 
 (* VRAM DMA - in VRAM *)
 
-(* TODO *)
-module Palettes = struct
-  type t = int
-  let empty = 0
-  let get _ _ = 0
-  let set _ _ _ = 0
-  let in_range i = 0xFF68 <= i && i <= 0xFF6B
-end
+(* Palettes - in graphics *)
 
 (* WRAM bank select - in WRAM *)
 

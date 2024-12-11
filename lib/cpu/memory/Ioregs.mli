@@ -45,14 +45,6 @@ module WavePattern : sig
   include Addressable.S
 end
 
-module LCDControl : sig
-  include Addressable.S
-end
-
-module Palettes : sig
-  include Addressable.S
-end
-
 module IE : sig
   include Addressable.S
 end

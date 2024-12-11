@@ -1,6 +1,5 @@
 open Fetch_decode
 
-
 let fetch_decode_execute st =
   let instr = fetch_decode st in
   match instr st with

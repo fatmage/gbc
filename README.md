@@ -7,8 +7,8 @@
 
  - implement cartridge header reading
 
- - state intialisation - read cartridge header, check which mbc, then set rom and
-   ram in State to the corresponding mbc one
+ - state intialisation - read cartridge header, check which mbc, set rom and
+   ram in State to the corresponding mbc one nad then read the code to rom
 
  - interrupts
 

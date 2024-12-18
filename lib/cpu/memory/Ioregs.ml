@@ -74,7 +74,7 @@ module Timer = struct
     if double then 1048576 / v else 2097152 / v
   let double_speed m = m.speed
   let switch_speed m = { m with speed = not m.speed }
-  let run m _ = m
+  let run m cycles = { m with div_c = m.div_c + cycles; tima_c = m.tima_c + cycles }
   let in_range i = 0xFF04 <= i && i <= 0xFF07
 end
 
@@ -120,4 +120,15 @@ module IE = struct
   let get m _ = m
   let set m _ v = v land 0b11111
   let in_range i = i = 0xFFFF
+end
+
+module CGB_Regs = struct
+  type t = { hdma1 : int; hdma2 : int; hdma3 : int; hdma4 : int; hdma5 : int;
+  key1 : int}
+
+  let initial = { hdma1 = 0; hdma2 = 0; hdma3 = 0; hdma4 = 0; hdma5 = 0; key1 = 0 }
+
+  let get m _ = 0
+  let set m _ v = m
+  let in_range _ = false
 end

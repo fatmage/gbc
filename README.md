@@ -5,6 +5,8 @@
 
  - implement addressable memory components related to graphics
 
+ - implement DMA unit
+
  - implement cartridge header reading
 
  - state intialisation - read cartridge header, check which mbc, set rom and

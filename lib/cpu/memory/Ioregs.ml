@@ -15,7 +15,7 @@
 
 module Joypad = struct
   type t = int
-  let empty = 0
+  let initial = 0
   let get m _ = m
   let set _ _ v = v
   let in_range v = v = 0xFF00
@@ -24,7 +24,7 @@ end
 (* TODO *)
 module Serial = struct
   type t = int
-  let empty = 0
+  let initial = 0
   let get m _ = m
   let set _ _ v = v
   let in_range v = v = 0xFF01 || v = 0xFF02
@@ -32,7 +32,7 @@ end
 
 module Timer = struct
   type t = { div : int; tima : int; tma : int; tac : int; speed : bool }
-  let empty = { div = 0; tima = 0; tma = 0; tac = 0; speed = false }
+  let initial = { div = 0; tima = 0; tma = 0; tac = 0; speed = false }
   let reset_div m = { m with div = 0 }
 
   let get m i =
@@ -81,7 +81,7 @@ end
 
 module Interrupts = struct
   type t = int
-  let empty = 0
+  let initial = 0
   let get m _ = m
   let set _ _ v = v land 0b11111
   let in_range = (=) 0xFF0F
@@ -90,7 +90,7 @@ end
 (* TODO *)
 module Audio = struct
   type t = int
-  let empty = 0
+  let initial = 0
   let get _ _ = 0
   let set _ _ _ = 0
   let in_range i = 0xFF10 <= i && i <= 0xFF26
@@ -99,7 +99,7 @@ end
 (* TODO *)
 module WavePattern = struct
   type t = int
-  let empty = 0
+  let initial = 0
   let get _ _ = 0
   let set _ _ _ = 0
   let in_range i = 0xFF30 <= i && i <= 0xFF3F
@@ -117,7 +117,7 @@ end
 
 module IE = struct
   type t = int
-  let empty = 0
+  let initial = 0
   let get m _ = m
   let set m _ v = v land 0b11111
   let in_range i = i = 0xFFFF

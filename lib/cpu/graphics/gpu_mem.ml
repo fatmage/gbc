@@ -6,7 +6,7 @@ module VRAM = struct
 
   type t = Bank.t * Bank.t * int
 
-  let empty = Bank.empty, Bank.empty, 0
+  let initial = Bank.initial, Bank.initial, 0
 
   let get m i =
     match m, i with
@@ -30,7 +30,7 @@ module LCD_Regs = struct
       stat : int; scy: int; scx : int; wy : int; wx : int;
     }
 
-  let empty =
+  let initial =
     { lcdc = 0; ly = 0; lyc = 0; dma = 0;
       stat = 0; scy = 0; scx = 0; wy = 0; wx = 0 }
 
@@ -68,7 +68,7 @@ module LCD_Regs = struct
   let bgwindow_ep { lcdc; _ } = lcdc land 0x01 = 1
 
   let cmp_lyc m = if m.ly = m.lyc then { m with stat = m.stat lor 0x04 } else m
-  let in_range i = (0xFF40 <= i && i <= 0xFF45) || i = 0xFF4A || i = 0xFF4B
+  let in_range i = (0xFF40 <= i && i <= 0xFF46) || i = 0xFF4A || i = 0xFF4B
 end
 
 
@@ -82,7 +82,7 @@ module Palettes = struct
       cram : int list (* length 64 *)
     }
 
-  let empty =
+  let initial =
     {
       bgp = 0; obp0 = 0; obp1 = 0;
       bcps = 0; bcpd = 0; ocps = 0; ocpd = 0;
@@ -114,7 +114,7 @@ end
 
 type t = { mode : Gpu_mode.t; vram : VRAM.t; oam : OAM.t; lcd_regs : LCD_Regs.t; palettes : Palettes.t }
 
-let empty = { mode = OAM_scan; vram = VRAM.empty; oam = OAM.empty; lcd_regs = LCD_Regs.empty; palettes = Palettes.empty }
+let initial = { mode = OAM_scan; vram = VRAM.initial; oam = OAM.initial; lcd_regs = LCD_Regs.initial; palettes = Palettes.initial }
 let get t =
   function
   | i when VRAM.in_range i -> VRAM.get t.vram i

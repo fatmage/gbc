@@ -3,7 +3,6 @@ type dma_state = Inactive | Active of int
 type t = dma_state * int
 
 
-
 let rec exec_dma cpu_state dma_state =
   let exec_dma_aux cpu_state =
     function

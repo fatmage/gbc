@@ -20,7 +20,7 @@ let make_chunk size start : (module Addressable.S) =
       | Leaf -> 0
       | Node (_,l,_,r) -> 1 + (count_nodes l) + (count_nodes r)
       | Cap (_,m) -> 1 + (count_nodes m)
-  let empty =
+  let initial =
     let rec help n i offset=
       match n with
         | 0 -> Leaf
@@ -88,8 +88,8 @@ module WRAM = struct
 
   type t = { b0: Bank0.t; bs: Banks.t list; svbk : int }
 
-  let empty =
-    { b0 = Bank0.empty; bs = List.init 7 (fun _ -> Banks.empty); svbk = 0 }
+  let initial =
+    { b0 = Bank0.initial; bs = List.init 7 (fun _ -> Banks.initial); svbk = 0 }
 
   let get m i =
     match m,i with

@@ -119,11 +119,11 @@ end
 let initial =
   {
     regs = Regs.initial_regfile; flags = Regs.initial_flags;
-    rom = Rom.S.empty; ram = RAM.empty; wram = WRAM.empty;
-    gpu_mem = Gpu_mem.empty; hram = HRAM.empty; joypad = Joypad.empty;
-    serial = Serial.empty; timer = Timer.empty; iflag = Interrupts.empty;
-    audio = Audio.empty; wave = WavePattern.empty;
-    ie = IE.empty; halted = false; ime = Disabled
+    rom = Rom.S.initial; ram = RAM.initial; wram = WRAM.initial;
+    gpu_mem = Gpu_mem.initial; hram = HRAM.initial; joypad = Joypad.initial;
+    serial = Serial.initial; timer = Timer.initial; iflag = Interrupts.initial;
+    audio = Audio.initial; wave = WavePattern.initial;
+    ie = IE.initial; halted = false; ime = Disabled
   }
 
 let set_r8 st r v = { st with regs = Regs.set_r8 st.regs r v }

@@ -31,8 +31,8 @@ module Serial = struct
 end
 
 module Timer = struct
-  type t = { div : int; tima : int; tma : int; tac : int; speed : bool }
-  let initial = { div = 0; tima = 0; tma = 0; tac = 0; speed = false }
+  type t = { div : int; tima : int; tma : int; tac : int; speed : bool; div_c : int; tima_c : int }
+  let initial = { div = 0; tima = 0; tma = 0; tac = 0; speed = false; div_c = 0; tima_c = 0 }
   let reset_div m = { m with div = 0 }
 
   let get m i =
@@ -68,13 +68,12 @@ module Timer = struct
     else
       { m with tima = res }, false
 
-  let tac_enabled m = m.tac land 0b100 > 0
+  let tac_enabled m = m.tac land 0b100 = 0b100
   let tima_mcyc m = m.tima
   let mcyc_to_hz v double =
     if double then 1048576 / v else 2097152 / v
   let double_speed m = m.speed
   let switch_speed m = { m with speed = not m.speed }
-
   let run m _ = m
   let in_range i = 0xFF04 <= i && i <= 0xFF07
 end

@@ -5,7 +5,11 @@
 
  - implement addressable memory components related to graphics
 
- - implement DMA unit
+ - implement OAM DMA
+
+ - implement VRAM HDMA
+
+ - implement CGB registers
 
  - implement cartridge header reading
 

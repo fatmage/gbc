@@ -74,6 +74,8 @@ module Timer = struct
     if double then 1048576 / v else 2097152 / v
   let double_speed m = m.speed
   let switch_speed m = { m with speed = not m.speed }
+
+  let run m _ = m
   let in_range i = 0xFF04 <= i && i <= 0xFF07
 end
 

@@ -31,6 +31,7 @@ module Timer : sig
   val tima_mcyc : t -> int
   val mcyc_to_hz : int -> bool -> int
   val switch_speed : t -> t
+  val run : t -> int -> t
 end
 
 module Interrupts : sig

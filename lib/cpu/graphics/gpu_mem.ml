@@ -26,13 +26,13 @@ end
 module LCD_Regs = struct
   type t =
     {
-      lcdc : int; ly : int; lyc : int; stat : int;
-      scy: int; scx : int; wy : int; wx : int;
+      lcdc : int; ly : int; lyc : int; dma : int;
+      stat : int; scy: int; scx : int; wy : int; wx : int;
     }
 
   let empty =
-    { lcdc = 0; ly = 0; lyc = 0; stat = 0;
-      scy = 0; scx = 0; wy = 0; wx = 0 }
+    { lcdc = 0; ly = 0; lyc = 0; dma = 0;
+      stat = 0; scy = 0; scx = 0; wy = 0; wx = 0 }
 
   let get m =
     function
@@ -42,6 +42,7 @@ module LCD_Regs = struct
     | 0xFF43 -> m.scx
     | 0xFF44 -> m.ly
     | 0xFF45 -> m.lyc
+    | 0xFF46 -> m.dma
     | 0xFF4A -> m.wy
     | 0xFF4B -> m.wx
 
@@ -53,6 +54,7 @@ module LCD_Regs = struct
     | 0xFF43 -> { m with scx = v }
     | 0xFF44 -> m
     | 0xFF45 -> { m with lyc = v }
+    | 0xFF46 -> { m with dma = v }
     | 0xFF4A -> { m with wy = v }
     | 0xFF4B -> { m with wx = v }
 
@@ -68,6 +70,7 @@ module LCD_Regs = struct
   let cmp_lyc m = if m.ly = m.lyc then { m with stat = m.stat lor 0x04 } else m
   let in_range i = (0xFF40 <= i && i <= 0xFF45) || i = 0xFF4A || i = 0xFF4B
 end
+
 
 module Palettes = struct
   type t =

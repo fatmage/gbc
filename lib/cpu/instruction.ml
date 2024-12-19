@@ -1,6 +1,6 @@
 (* Instruction type *)
 
-type next_action = Next | Jump
+type next_action = Next | Jump | Halt | Stop
 
 type instruction = State.t -> State.t * next_action * int
 
@@ -627,13 +627,13 @@ let iEI : instruction = fun st ->
 
 let iHALT : instruction = fun st ->
   match st.ime with
-  | Enabled -> { st with halted = true }, Next, 0
-  | _       ->
+  | Enabled  -> { st with activity = Halted }, Halt, 1
+  | Disabled ->
     let _if, _ie = State.Bus.get8 st 0xFF0F, State.Bus.get8 st 0xFFFF in
-    if _if land _ie > 0
-    then { st with halted = true }, Next, 0
+    if _if land _ie = 0
+    then { st with activity = Halted }, Halt, 1
     (* HALT BUG TODO *)
-    else st, Next, 0
+    else st, Next, 1
 
 let iNOP : instruction = fun st ->
   st, Next, 1
@@ -642,7 +642,7 @@ let iSCF : instruction = fun st ->
   State.set_flags st ~n:false ~h:false ~c:true (), Next, 1
 
 let iSTOP _ : instruction = fun st ->
-  { st with timer = Ioregs.Timer.switch_speed (Ioregs.Timer.reset_div st.timer) }, Next, 0
+  { st with activity = Stopped 0; timer = Ioregs.Timer.switch_speed (Ioregs.Timer.reset_div st.timer) }, Stop, 0
 
 
 (* Not an actual instruction *)

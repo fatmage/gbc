@@ -38,28 +38,39 @@ let fetch_decode_execute st =
   | st, Next, cycles ->
     { st with regs = { st.regs with _PC = st.regs._PC + cycles } }, cycles
 
-let check_interrupts st =
-    match st.ime, st.activity with
-    | Enabled, Running | Enabled, Halted ->
-      begin match Ioregs.IE.get st.ie 0xFFFF land Ioregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
-      | 1 -> 0x40, Running
-      | 2 -> 0x48, Running
-      | 3 -> 0x50, Running
-      | 4 -> 0x58, Running
-      | 5 -> 0x60, Running
-      | _ -> 0x00, Running
-      end
-
-
-
+let poll_interrupts_halted st =
+  let st, addr, act =
+    match st.ime with
+    | Enabled ->
+        begin match Ioregs.IE.get st.ie 0xFFFF land Ioregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
+        | 1 -> { st with activity = Running }, 0x40, Running
+        | 2 -> { st with activity = Running }, 0x48, Running
+        | 3 -> { st with activity = Running }, 0x50, Running
+        | 4 -> { st with activity = Running }, 0x58, Running
+        | 5 -> { st with activity = Running }, 0x60, Running
+        | _ -> st, 0x00, Halted
+        end
+    | Disabled ->
+        begin match Ioregs.IE.get st.ie 0xFFFF land Ioregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
+        | 1 | 2 | 3 | 4 | 5 -> { st with activity = Running }, 0x00, Running
+        | _ -> st, 0x00, Halted
+        end
+    | Enabling ->
+        begin match Ioregs.IE.get st.ie 0xFFFF land Ioregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
+        | 1 | 2 | 3 | 4 | 5 -> { st with activity = Running }, 0x00, Running
+        | _ -> st, 0x00, Halted
+        end
+  in
+  match act, addr with
+  | Running, 0x00 -> fetch_decode st st
+  | Running, n    -> Instruction.interrupt_service_routine n st
+  | Halted,  _    -> st, Halt, 1
 
 let cpu_step st dma hdma ppu =
   match st.activity with
   | Running ->
     (* interrupt or fetch decode execute *)
     let st, mc = fetch_decode_execute st in
-    (* if halted  - wait for interrupt - switch cpu activity  *)
-    (* if stopped - stop for x mcycles - switch cpu activity *)
     (* timer *)
     let st = { st with timer = Ioregs.Timer.run st.timer mc } in
     (* dma *)
@@ -71,10 +82,16 @@ let cpu_step st dma hdma ppu =
     (* w "mainie" bedizemy dodawac st dma ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
   | Halted ->
     (* check for interrupt *)
+    let st, _, mc = poll_interrupts_halted st in
     (* dma  *)
+    let st, dma = Dma_unit.OAM.exec_dma st dma mc in
     (* hdma *)
+    let st, hdma = Dma_unit.HDMA.exec_dma st hdma mc in
     (* ppu  *)
+    let ppu = Ppu.process_ppu st.gpu_mem ppu @@ Ppu.dot_of_mc mc in
     st, dma, hdma, ppu
-  | Stopped _ ->
+  | Stopped n ->
+    if n =
+
     (* idea - do a set amount of cycles, progress dma hdma and ppu, and then after reaching x cycles change to running *)
     st, dma, hdma, ppu

@@ -38,7 +38,13 @@ module Timer = struct
   let get m i =
     match i with
     | 0xFF04 -> m.div
-    | 0xFF05 -> m.tima
+    | 0xFF05 ->
+      begin match m.tima with
+      | 256 -> 0b00
+      | 4   -> 0b01
+      | 16  -> 0b10
+      | 64  -> 0b11
+      end
     | 0xFF06 -> m.tma
     | 0xFF07 -> m.tac
 
@@ -74,7 +80,31 @@ module Timer = struct
     if double then 1048576 / v else 2097152 / v
   let double_speed m = m.speed
   let switch_speed m = { m with speed = not m.speed }
-  let run m cycles = { m with div_c = m.div_c + cycles; tima_c = m.tima_c + cycles }
+  let run_div m cycles =
+    let rec aux m =
+      function
+      | 0 -> m
+      | n -> aux (inc_div m) (n - 1)
+    in
+    let div_c = m.div_c + cycles in
+    let ticks = div_c / 64 in
+    let m = aux m ticks in
+    { m with div_c = div_c mod 64 }
+
+  let run_tima m cycles =
+    let rec aux (m,i) =
+      function
+      | 0 -> m,i
+      | n -> aux (inc_tima m) (n - 1)
+    in
+    match tac_enabled m with
+    | false -> m, false
+    | true  ->
+      let tima_c = m.tima_c + cycles in
+      let cpt = tima_mcyc m in
+      let ticks = tima_c / cpt in
+      let m, interrupted = aux (m, false) ticks in
+      { m with tima_c = tima_c mod cpt }, interrupted
   let in_range i = 0xFF04 <= i && i <= 0xFF07
 end
 
@@ -83,6 +113,12 @@ module Interrupts = struct
   let initial = 0
   let get m _ = m
   let set _ _ v = v land 0b11111
+  let request_joypad m = m lor 0b10000
+  let request_serial m = m lor 0b01000
+  let request_timer m  = m lor 0b00100
+  let request_LCD m    = m lor 0b00010
+  let request_VBlank m = m lor 0b00001
+
   let in_range = (=) 0xFF0F
 end
 

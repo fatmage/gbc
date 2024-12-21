@@ -20,6 +20,7 @@ let rec exec_dma cpu_state dma_state =
   | n -> let c, d = exec_dma_aux cpu_state dma_state in exec_dma c d (n-1)
 end
 
+(* move dma and hdma here *)
 
 module HDMA = struct
   type hdma_state = Inactive | Active of int

@@ -72,7 +72,16 @@ let cpu_step st dma hdma ppu =
     (* interrupt or fetch decode execute *)
     let st, mc = fetch_decode_execute st in
     (* timer *)
-    let st = { st with timer = Ioregs.Timer.run st.timer mc } in
+    (* run div *)
+    let st = { st with timer = Ioregs.Timer.run_div st.timer mc } in
+    (* run tima *)
+    let timer, if_requested = Ioregs.Timer.run_tima st.timer mc in
+    let st =
+      if if_requested then
+        { st with iflag = Ioregs.Interrupts.request_timer st.iflag; timer }
+      else
+        st
+    in
     (* dma *)
     let st, dma = Dma_unit.OAM.exec_dma st dma mc in
     let st, hdma = Dma_unit.HDMA.exec_dma st hdma mc in
@@ -83,6 +92,17 @@ let cpu_step st dma hdma ppu =
   | Halted ->
     (* check for interrupt *)
     let st, _, mc = poll_interrupts_halted st in
+    (* timer *)
+    (* run div *)
+    let st = { st with timer = Ioregs.Timer.run_div st.timer mc } in
+    (* run tima *)
+    let timer, if_requested = Ioregs.Timer.run_tima st.timer mc in
+    let st =
+      if if_requested then
+        { st with iflag = Ioregs.Interrupts.request_timer st.iflag; timer }
+      else
+        st
+    in
     (* dma  *)
     let st, dma = Dma_unit.OAM.exec_dma st dma mc in
     (* hdma *)
@@ -91,7 +111,7 @@ let cpu_step st dma hdma ppu =
     let ppu = Ppu.process_ppu st.gpu_mem ppu @@ Ppu.dot_of_mc mc in
     st, dma, hdma, ppu
   | Stopped n ->
-    if n =
+    (* if n = *)
 
     (* idea - do a set amount of cycles, progress dma hdma and ppu, and then after reaching x cycles change to running *)
     st, dma, hdma, ppu

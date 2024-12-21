@@ -31,11 +31,18 @@ module Timer : sig
   val tima_mcyc : t -> int
   val mcyc_to_hz : int -> bool -> int
   val switch_speed : t -> t
-  val run : t -> int -> t
+  val run_div : t -> int -> t
+  val run_tima : t -> int -> t * bool
 end
 
 module Interrupts : sig
   include Addressable.S
+
+  val request_joypad : t -> t
+  val request_serial : t -> t
+  val request_timer : t -> t
+  val request_LCD : t -> t
+  val request_VBlank : t -> t
 end
 
 module Audio : sig

@@ -159,10 +159,17 @@ module IE = struct
 end
 
 module CGB_Regs = struct
-  type t = { hdma1 : int; hdma2 : int; hdma3 : int; hdma4 : int; hdma5 : int;
-  key1 : int}
+  type t =
+    {
+      hdma1 : int; hdma2 : int; hdma3 : int; hdma4 : int; hdma5 : int;
+      key0 : int; key1 : int; opri : int; rp : int
+    }
 
-  let initial = { hdma1 = 0; hdma2 = 0; hdma3 = 0; hdma4 = 0; hdma5 = 0; key1 = 0 }
+  let initial =
+    {
+      hdma1 = 0; hdma2 = 0; hdma3 = 0; hdma4 = 0; hdma5 = 0; key0 = 0;
+      key1 = 0; opri = 0; rp = 0
+      }
 
   let get m _ = 0
   let set m _ v = m

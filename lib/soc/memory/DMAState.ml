@@ -1,9 +1,23 @@
 module OAM = struct
 
-  type t = Inactive | Active of { src : int; progress : int }
+  module State = struct
+    type t = Inactive | Active of { src : int; progress : int }
+    let initial = Inactive
+  end
 
-  let initial = Inactive
+  type t = { dma : int; state : State.t }
+  let initial = { dma = 0; state = State.initial }
 
+  let get m _ = m.dma
+  let set m _ v =
+    match m with
+    | { state = Inactive; _ } -> { dma = v; state = Active { src = v lsl 8; progress = 0 } }
+    | { state; _ } -> { dma = v; state }
+
+  let in_range i = i = 0xFF46
+
+  let state { state; _ } = state
+  let set_state m v = { m with state = v }
 
 end
 
@@ -34,5 +48,7 @@ module VRAM = struct
     | 0xFF54 -> { m with hdma4 = v }
     | 0xFF55 -> { m with hdma5 = v }
 
-    let in_range i = 0xFF51 <= i && i <= 0xF55
+  let in_range i = 0xFF51 <= i && i <= 0xF55
+
+  let state { state; _ } = state
 end

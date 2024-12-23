@@ -41,7 +41,6 @@ module LCD_Regs = struct
     | 0xFF43 -> m.scx
     | 0xFF44 -> m.ly
     | 0xFF45 -> m.lyc
-    | 0xFF46 -> m.dma
     | 0xFF4A -> m.wy
     | 0xFF4B -> m.wx
 
@@ -67,7 +66,7 @@ module LCD_Regs = struct
   let bgwindow_ep { lcdc; _ } = lcdc land 0x01 = 1
 
   let cmp_lyc m = if m.ly = m.lyc then { m with stat = m.stat lor 0x04 } else m
-  let in_range i = (0xFF40 <= i && i <= 0xFF46) || i = 0xFF4A || i = 0xFF4B
+  let in_range i = (0xFF40 <= i && i <= 0xFF45) || i = 0xFF4A || i = 0xFF4B
 end
 
 

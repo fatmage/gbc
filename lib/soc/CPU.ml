@@ -66,7 +66,7 @@ let poll_interrupts_halted st =
   | Running, n    -> Instruction.interrupt_service_routine n st
   | Halted,  _    -> st, Halt, 1
 
-let cpu_step st dma hdma ppu =
+let cpu_step st ppu =
   match st.activity with
   | Running ->
     (* interrupt or fetch decode execute *)
@@ -83,11 +83,11 @@ let cpu_step st dma hdma ppu =
         st
     in
     (* dma *)
-    let st, dma = DMAUnit.OAM.exec_dma st dma mc in
-    let st, hdma = DMAUnit.VRAM.exec_dma st hdma mc in
+    let st = DMAUnit.OAM.exec_dma st mc in
+    let st = DMAUnit.VRAM.exec_dma st mc in
     (* ppu *)
     let ppu = PPU.process_ppu st.gpu_mem ppu @@ PPU.dot_of_mc mc in
-    st, dma, hdma, ppu
+    st, ppu
     (* w "mainie" bedizemy dodawac st dma ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
   | Halted ->
     (* check for interrupt *)
@@ -104,14 +104,14 @@ let cpu_step st dma hdma ppu =
         st
     in
     (* dma  *)
-    let st, dma = DMAUnit.OAM.exec_dma st dma mc in
+    let st = DMAUnit.OAM.exec_dma st mc in
     (* hdma *)
-    let st, hdma = DMAUnit.VRAM.exec_dma st hdma mc in
+    let st = DMAUnit.VRAM.exec_dma st mc in
     (* ppu  *)
     let ppu = PPU.process_ppu st.gpu_mem ppu @@ PPU.dot_of_mc mc in
-    st, dma, hdma, ppu
+    st, ppu
   | Stopped n ->
     (* if n = *)
 
     (* idea - do a set amount of cycles, progress dma hdma and ppu, and then after reaching x cycles change to running *)
-    st, dma, hdma, ppu
+    st, ppu

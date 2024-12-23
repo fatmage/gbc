@@ -12,7 +12,7 @@ type t =
     hram : HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
-    dma_vram : DMAState.VRAM.t
+    dma_oam : DMAState.OAM.t; dma_vram : DMAState.VRAM.t
   }
 
 module Bus = struct
@@ -69,6 +69,8 @@ module Bus = struct
       -> IE.get st.ie addr
     | _ when DMAState.VRAM.in_range addr
       -> DMAState.VRAM.get st.dma_vram addr
+    | _ when DMAState.OAM.in_range addr
+      -> DMAState.OAM.get st.dma_oam addr
     | _
       -> failwith "Bus error: address out of range."
 
@@ -110,6 +112,8 @@ module Bus = struct
       -> { st with ie = IE.set st.ie addr v }
     | _ when DMAState.VRAM.in_range addr
       -> { st with dma_vram = DMAState.VRAM.set st.dma_vram addr v }
+    | _ when DMAState.OAM.in_range addr
+      -> { st with dma_oam = DMAState.OAM.set st.dma_oam addr v }
     | _
       -> failwith "Bus error: address out of range."
 
@@ -131,7 +135,7 @@ let initial =
     serial = Serial.initial; timer = Timer.initial; iflag = Interrupts.initial;
     audio = Audio.initial; wave = WavePattern.initial;
     ie = IE.initial; ime = Disabled; activity = Running;
-    dma_vram = DMAState.VRAM.initial
+    dma_oam = DMAState.OAM.initial; dma_vram = DMAState.VRAM.initial
   }
 
 let set_r8 st r v = { st with regs = Regs.set_r8 st.regs r v }

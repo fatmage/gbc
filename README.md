@@ -3,8 +3,6 @@
 
 ## Roadmap:
 
- - implement basic OAM and VRAM dma without checking necessary conditions
-
  - implement cartridge header reading
 
  - state intialisation - read cartridge header, check which mbc, set rom and
@@ -15,6 +13,8 @@
  - implement graphics
 
  - check if it works at all
+
+ - implement VRAM DMA
 
  - implement missing functionalities from the cpu
 

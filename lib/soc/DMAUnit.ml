@@ -1,28 +1,24 @@
-
+open State
 
 module OAM = struct
 
+  let exec_dma cpu_state mc =
+    let rec aux cpu_state (DMAState.OAM.State.Active {src;progress}) n =
+      match progress, n with
+      | 160, _ -> { cpu_state with dma_oam = DMAState.OAM.set_state cpu_state.dma_oam Inactive }
+      | m, 0   -> { cpu_state with dma_oam = DMAState.OAM.set_state cpu_state.dma_oam @@ Active {src; progress} }
+      | m, n   -> aux (State.set_v8 cpu_state (0xFE00 + m) (State.get_v8 cpu_state (src + m))) (DMAState.OAM.State.Active {src; progress = m + 1}) (n - 1)
+    in
+    match cpu_state.dma_oam.state with
+    | Inactive -> cpu_state
+    | _        -> aux cpu_state cpu_state.dma_oam.state mc
 
-let exec_dma cpu_state dma_state mc = cpu_state, dma_state
-  (* let exec_dma_aux cpu_state =
-    function
-    | Inactive, old_dma ->
-      let curr_dma = State.get_v8 cpu_state 0xFF46 in
-      if old_dma != curr_dma then cpu_state, (Active 0, curr_dma) else cpu_state, (Inactive, old_dma)
-    | Active 0, addr_start -> cpu_state, (Inactive, addr_start)
-    | Active n, addr_start -> failwith "TODO"
-
-  in
-  function
-  | 0 -> cpu_state, dma_state
-  | n -> let c, d = exec_dma_aux cpu_state dma_state in exec_dma c d (n-1) *)
 end
 
 (* move dma and hdma here *)
 
 module VRAM = struct
 
-  let exec_dma cpu_state hdma_state mc =
-    cpu_state, hdma_state
+  let exec_dma cpu_state mc = cpu_state
 
 end

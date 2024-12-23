@@ -1,5 +1,5 @@
-open Ioregs
-open Ram
+open IOregs
+open RAM
 
 type interrupts = Disabled | Enabling | Enabled
 
@@ -8,7 +8,7 @@ type cpu_activity = Running | Halted | Stopped of int
 type t =
   {
     regs: Regs.regfile; flags : Regs.flags;
-    rom: Rom.S.t; ram : RAM.t; wram : WRAM.t; gpu_mem : Gpu_mem.t;
+    rom: ROM.S.t; ram : RAM.t; wram : WRAM.t; gpu_mem : GPUmem.t;
     hram : HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
@@ -34,10 +34,10 @@ module Bus = struct
 
   let get8 st addr =
     match addr with
-    | _ when Rom.S.in_range addr (* ROM *)
-      -> Rom.S.get st.rom addr
-    | _ when Gpu_mem.in_range addr (* VRAM, OAM, LCD control, palettes *)
-      -> Gpu_mem.get st.gpu_mem addr
+    | _ when ROM.S.in_range addr (* ROM *)
+      -> ROM.S.get st.rom addr
+    | _ when GPUmem.in_range addr (* VRAM, OAM, LCD control, palettes *)
+      -> GPUmem.get st.gpu_mem addr
     | _ when RAM.in_range addr (* External RAM *)
       -> RAM.get st.ram addr
     | _ when WRAM.in_range addr (* WRAM *)
@@ -75,10 +75,10 @@ module Bus = struct
 
   let set8 st addr v =
     match addr with
-    | _ when Rom.S.in_range addr (* ROM *)
-      -> { st with rom = Rom.S.set st.rom addr v }
-    | _ when Gpu_mem.VRAM.in_range addr (* VRAM, OAM, LCD control, palettes *)
-      -> { st with gpu_mem = Gpu_mem.set st.gpu_mem addr v }
+    | _ when ROM.S.in_range addr (* ROM *)
+      -> { st with rom = ROM.S.set st.rom addr v }
+    | _ when GPUmem.VRAM.in_range addr (* VRAM, OAM, LCD control, palettes *)
+      -> { st with gpu_mem = GPUmem.set st.gpu_mem addr v }
     | _ when RAM.in_range addr (* External RAM *)
       -> { st with ram = RAM.set st.ram addr v }
     | _ when WRAM.in_range addr (* WRAM *)
@@ -126,8 +126,8 @@ end
 let initial =
   {
     regs = Regs.initial_regfile; flags = Regs.initial_flags;
-    rom = Rom.S.initial; ram = RAM.initial; wram = WRAM.initial;
-    gpu_mem = Gpu_mem.initial; hram = HRAM.initial; joypad = Joypad.initial;
+    rom = ROM.S.initial; ram = RAM.initial; wram = WRAM.initial;
+    gpu_mem = GPUmem.initial; hram = HRAM.initial; joypad = Joypad.initial;
     serial = Serial.initial; timer = Timer.initial; iflag = Interrupts.initial;
     audio = Audio.initial; wave = WavePattern.initial;
     ie = IE.initial; ime = Disabled; activity = Running;

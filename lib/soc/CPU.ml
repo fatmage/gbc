@@ -1,4 +1,4 @@
-open Fetch_decode
+open FetchDecode
 open State
 
 let first_set_bit =
@@ -16,7 +16,7 @@ let fetch_decode_execute st =
     match st.ime with
     | Enabled  ->
       let addr =
-        match Ioregs.IE.get st.ie 0xFFFF land Ioregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
+        match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
         | 1 -> 0x40 (* VBlank *)
         | 2 -> 0x48 (* LCD *)
         | 3 -> 0x50 (* Timer *)
@@ -42,7 +42,7 @@ let poll_interrupts_halted st =
   let st, addr, act =
     match st.ime with
     | Enabled ->
-        begin match Ioregs.IE.get st.ie 0xFFFF land Ioregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
+        begin match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
         | 1 -> { st with activity = Running }, 0x40, Running
         | 2 -> { st with activity = Running }, 0x48, Running
         | 3 -> { st with activity = Running }, 0x50, Running
@@ -51,12 +51,12 @@ let poll_interrupts_halted st =
         | _ -> st, 0x00, Halted
         end
     | Disabled ->
-        begin match Ioregs.IE.get st.ie 0xFFFF land Ioregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
+        begin match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
         | 1 | 2 | 3 | 4 | 5 -> { st with activity = Running }, 0x00, Running
         | _ -> st, 0x00, Halted
         end
     | Enabling ->
-        begin match Ioregs.IE.get st.ie 0xFFFF land Ioregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
+        begin match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
         | 1 | 2 | 3 | 4 | 5 -> { st with activity = Running }, 0x00, Running
         | _ -> st, 0x00, Halted
         end
@@ -73,12 +73,12 @@ let cpu_step st dma hdma ppu =
     let st, mc = fetch_decode_execute st in
     (* timer *)
     (* run div *)
-    let st = { st with timer = Ioregs.Timer.run_div st.timer mc } in
+    let st = { st with timer = IOregs.Timer.run_div st.timer mc } in
     (* run tima *)
-    let timer, if_requested = Ioregs.Timer.run_tima st.timer mc in
+    let timer, if_requested = IOregs.Timer.run_tima st.timer mc in
     let st =
       if if_requested then
-        { st with iflag = Ioregs.Interrupts.request_timer st.iflag; timer }
+        { st with iflag = IOregs.Interrupts.request_timer st.iflag; timer }
       else
         st
     in
@@ -86,7 +86,7 @@ let cpu_step st dma hdma ppu =
     let st, dma = DMAUnit.OAM.exec_dma st dma mc in
     let st, hdma = DMAUnit.VRAM.exec_dma st hdma mc in
     (* ppu *)
-    let ppu = Ppu.process_ppu st.gpu_mem ppu @@ Ppu.dot_of_mc mc in
+    let ppu = PPU.process_ppu st.gpu_mem ppu @@ PPU.dot_of_mc mc in
     st, dma, hdma, ppu
     (* w "mainie" bedizemy dodawac st dma ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
   | Halted ->
@@ -94,12 +94,12 @@ let cpu_step st dma hdma ppu =
     let st, _, mc = poll_interrupts_halted st in
     (* timer *)
     (* run div *)
-    let st = { st with timer = Ioregs.Timer.run_div st.timer mc } in
+    let st = { st with timer = IOregs.Timer.run_div st.timer mc } in
     (* run tima *)
-    let timer, if_requested = Ioregs.Timer.run_tima st.timer mc in
+    let timer, if_requested = IOregs.Timer.run_tima st.timer mc in
     let st =
       if if_requested then
-        { st with iflag = Ioregs.Interrupts.request_timer st.iflag; timer }
+        { st with iflag = IOregs.Interrupts.request_timer st.iflag; timer }
       else
         st
     in
@@ -108,7 +108,7 @@ let cpu_step st dma hdma ppu =
     (* hdma *)
     let st, hdma = DMAUnit.VRAM.exec_dma st hdma mc in
     (* ppu  *)
-    let ppu = Ppu.process_ppu st.gpu_mem ppu @@ Ppu.dot_of_mc mc in
+    let ppu = PPU.process_ppu st.gpu_mem ppu @@ PPU.dot_of_mc mc in
     st, dma, hdma, ppu
   | Stopped n ->
     (* if n = *)

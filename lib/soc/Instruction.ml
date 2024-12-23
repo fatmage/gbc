@@ -642,7 +642,7 @@ let iSCF : instruction = fun st ->
   State.set_flags st ~n:false ~h:false ~c:true (), Next, 1
 
 let iSTOP _ : instruction = fun st ->
-  { st with activity = Stopped 0; timer = Ioregs.Timer.switch_speed (Ioregs.Timer.reset_div st.timer) }, Stop, 0
+  { st with activity = Stopped 0; timer = IOregs.Timer.switch_speed (IOregs.Timer.reset_div st.timer) }, Stop, 0
 
 
 (* Not an actual instruction *)

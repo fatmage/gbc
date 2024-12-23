@@ -1,8 +1,7 @@
-
-module OAM = Ram.RAM
+module OAM = RAM.RAM
 
 module VRAM = struct
-  module Bank = (val Ram.make_chunk 8912 0x8000)
+  module Bank = (val RAM.make_chunk 8912 0x8000)
 
   type t = Bank.t * Bank.t * int
 
@@ -112,7 +111,7 @@ module Palettes = struct
   let in_range i = (0xFF47 <= i && i <= 0xFF48) || (0xFF68 <= i && i <= 0xFF6B)
 end
 
-type t = { mode : Gpu_mode.t; vram : VRAM.t; oam : OAM.t; lcd_regs : LCD_Regs.t; palettes : Palettes.t }
+type t = { mode : GPUmode.t; vram : VRAM.t; oam : OAM.t; lcd_regs : LCD_Regs.t; palettes : Palettes.t }
 
 let initial = { mode = OAM_scan; vram = VRAM.initial; oam = OAM.initial; lcd_regs = LCD_Regs.initial; palettes = Palettes.initial }
 let get t =

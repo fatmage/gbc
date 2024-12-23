@@ -3,26 +3,22 @@
 
 ## Roadmap:
 
- - implement addressable memory components related to graphics
-
- - implement OAM DMA
-
- - implement VRAM HDMA
-
- - implement CGB registers
+ - implement basic OAM and VRAM dma without checking necessary conditions
 
  - implement cartridge header reading
 
  - state intialisation - read cartridge header, check which mbc, set rom and
    ram in State to the corresponding mbc one nad then read the code to rom
 
- - interrupts
+ - implement ppu
 
- - ppu
+ - implement graphics
 
- - graphics
+ - check if it works at all
 
- - controls
+ - implement missing functionalities from the cpu
+
+ - controls/user interface
 
  - functional features - debugger taking advantage of immutable state
 

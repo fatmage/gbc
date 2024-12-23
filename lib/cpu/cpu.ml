@@ -83,8 +83,8 @@ let cpu_step st dma hdma ppu =
         st
     in
     (* dma *)
-    let st, dma = Dma_unit.OAM.exec_dma st dma mc in
-    let st, hdma = Dma_unit.HDMA.exec_dma st hdma mc in
+    let st, dma = DMAUnit.OAM.exec_dma st dma mc in
+    let st, hdma = DMAUnit.VRAM.exec_dma st hdma mc in
     (* ppu *)
     let ppu = Ppu.process_ppu st.gpu_mem ppu @@ Ppu.dot_of_mc mc in
     st, dma, hdma, ppu
@@ -104,9 +104,9 @@ let cpu_step st dma hdma ppu =
         st
     in
     (* dma  *)
-    let st, dma = Dma_unit.OAM.exec_dma st dma mc in
+    let st, dma = DMAUnit.OAM.exec_dma st dma mc in
     (* hdma *)
-    let st, hdma = Dma_unit.HDMA.exec_dma st hdma mc in
+    let st, hdma = DMAUnit.VRAM.exec_dma st hdma mc in
     (* ppu  *)
     let ppu = Ppu.process_ppu st.gpu_mem ppu @@ Ppu.dot_of_mc mc in
     st, dma, hdma, ppu

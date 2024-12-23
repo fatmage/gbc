@@ -11,8 +11,8 @@ type t =
     rom: Rom.S.t; ram : RAM.t; wram : WRAM.t; gpu_mem : Gpu_mem.t;
     hram : HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
-    wave : WavePattern.t; ie: IE.t; ime : interrupts;
-    activity : cpu_activity
+    wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
+    dma_vram : DMAState.VRAM.t
   }
 
 module Bus = struct
@@ -126,7 +126,8 @@ let initial =
     gpu_mem = Gpu_mem.initial; hram = HRAM.initial; joypad = Joypad.initial;
     serial = Serial.initial; timer = Timer.initial; iflag = Interrupts.initial;
     audio = Audio.initial; wave = WavePattern.initial;
-    ie = IE.initial; ime = Disabled; activity = Running
+    ie = IE.initial; ime = Disabled; activity = Running;
+    dma_vram = DMAState.VRAM.initial
   }
 
 let set_r8 st r v = { st with regs = Regs.set_r8 st.regs r v }

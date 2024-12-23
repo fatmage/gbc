@@ -67,6 +67,8 @@ module Bus = struct
       -> HRAM.get st.hram addr
     | _ when IE.in_range addr (* Interrupt Enable register *)
       -> IE.get st.ie addr
+    | _ when DMAState.VRAM.in_range addr
+      -> DMAState.VRAM.get st.dma_vram addr
     | _
       -> failwith "Bus error: address out of range."
 
@@ -106,6 +108,8 @@ module Bus = struct
       -> { st with hram = HRAM.set st.hram addr v }
     | _ when IE.in_range addr (* Interrupt Enable register *)
       -> { st with ie = IE.set st.ie addr v }
+    | _ when DMAState.VRAM.in_range addr
+      -> { st with dma_vram = DMAState.VRAM.set st.dma_vram addr v }
     | _
       -> failwith "Bus error: address out of range."
 

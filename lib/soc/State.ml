@@ -5,6 +5,7 @@ type interrupts = Disabled | Enabling | Enabled
 
 type cpu_activity = Running | Halted | Stopped of int
 
+
 type t =
   {
     regs: Regs.regfile; flags : Regs.flags;
@@ -171,3 +172,11 @@ let set_SPp st v = Bus.set16 st st.regs._SP v
 let inc_SP st = { st with regs = { st.regs with _SP = st.regs._SP + 2 } }
 let dec_SP st = { st with regs = { st.regs with _SP = st.regs._SP - 2 } }
 let adv_PC st c = { st with regs = { st.regs with _PC = st.regs._PC + c } }
+
+let get_speed st = IOregs.Timer.get_speed st.timer
+
+let request_joypad st = { st with iflag = Interrupts.request_joypad st.iflag }
+let request_serial st = { st with iflag = Interrupts.request_serial st.iflag }
+let request_timer st = { st with iflag = Interrupts.request_timer st.iflag }
+let request_LCD st = { st with iflag = Interrupts.request_LCD st.iflag }
+let request_VBlank st = { st with iflag = Interrupts.request_VBlank st.iflag }

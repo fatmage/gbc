@@ -47,7 +47,7 @@ module LCD_Regs = struct
   let set m i v =
     match i with
     | 0xFF40 -> { m with lcdc = v }
-    | 0xFF41 -> { m with stat = v land 0xF8 lor m.stat }
+    | 0xFF41 -> { m with stat = (v land 0xF8) lor (m.stat land 0x7) }
     | 0xFF42 -> { m with scy = v }
     | 0xFF43 -> { m with scx = v }
     | 0xFF44 -> m
@@ -55,6 +55,14 @@ module LCD_Regs = struct
     | 0xFF46 -> { m with dma = v }
     | 0xFF4A -> { m with wy = v }
     | 0xFF4B -> { m with wx = v }
+
+  (* STAT info *)
+  let lyc_cond { stat; _ } = stat land 0x40 > 0
+  let mode2_cond { stat; _ } = stat land 0x20 > 0
+  let mode1_cond { stat; _ } = stat land 0x10 > 0
+  let mode0_cond { stat; _ } = stat land 0x08 > 0
+  let lyc_ly_eq { stat; _ } = stat land 0x04 > 0
+  let get_mode { stat; _ } = stat land 0x03 |> GPUmode.of_int
 
   let lcd_enabled { lcdc; _ } = lcdc land 0x80 = 1
   let window_tm_area { lcdc; _ } = if lcdc land 0x40 = 1 then 0x9C00 else 0x9800
@@ -64,8 +72,7 @@ module LCD_Regs = struct
   let obj_size { lcdc; _ } = lcdc land 0x04 = 1
   let obj_enabled { lcdc; _ } = lcdc land 0x02 = 1
   let bgwindow_ep { lcdc; _ } = lcdc land 0x01 = 1
-
-  let cmp_lyc m = if m.ly = m.lyc then { m with stat = m.stat lor 0x04 } else m
+  let cmp_lyc m = if m.ly = m.lyc then { m with stat = m.stat lor 0x04 }, true else m, false
   let in_range i = (0xFF40 <= i && i <= 0xFF45) || i = 0xFF4A || i = 0xFF4B
 end
 
@@ -112,7 +119,7 @@ end
 
 type t = { mode : GPUmode.t; vram : VRAM.t; oam : OAM.t; lcd_regs : LCD_Regs.t; palettes : Palettes.t }
 
-let initial = { mode = OAM_scan; vram = VRAM.initial; oam = OAM.initial; lcd_regs = LCD_Regs.initial; palettes = Palettes.initial }
+let initial = { mode = OAM_scan 0; vram = VRAM.initial; oam = OAM.initial; lcd_regs = LCD_Regs.initial; palettes = Palettes.initial }
 let get t =
   function
   | i when VRAM.in_range i -> VRAM.get t.vram i
@@ -128,3 +135,5 @@ let set t i v =
   | _ when Palettes.in_range i -> { t with palettes = Palettes.set t.palettes i v }
 
 let in_range i = VRAM.in_range i || OAM.in_range i || LCD_Regs.in_range i || Palettes.in_range i
+
+let get_mode m = m.mode

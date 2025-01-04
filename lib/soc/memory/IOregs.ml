@@ -105,6 +105,8 @@ module Timer = struct
       let ticks = tima_c / cpt in
       let m, interrupted = aux (m, false) ticks in
       { m with tima_c = tima_c mod cpt }, interrupted
+
+  let get_speed m = m.speed
   let in_range i = 0xFF04 <= i && i <= 0xFF07
 end
 
@@ -118,7 +120,6 @@ module Interrupts = struct
   let request_timer m  = m lor 0b00100
   let request_LCD m    = m lor 0b00010
   let request_VBlank m = m lor 0b00001
-
   let in_range = (=) 0xFF0F
 end
 

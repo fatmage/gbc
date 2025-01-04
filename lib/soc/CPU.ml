@@ -86,7 +86,7 @@ let cpu_step st ppu =
     let st = DMAUnit.OAM.exec_dma st mc in
     let st = DMAUnit.VRAM.exec_dma st mc in
     (* ppu *)
-    let ppu = PPU.process_ppu st.gpu_mem ppu @@ PPU.dot_of_mc mc in
+    let st, ppu = PPU.process_ppu st ppu @@ PPU.dot_of_mc mc @@ State.get_speed st in
     st, ppu
     (* w "mainie" bedizemy dodawac st dma ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
   | Halted ->
@@ -108,7 +108,7 @@ let cpu_step st ppu =
     (* hdma *)
     let st = DMAUnit.VRAM.exec_dma st mc in
     (* ppu  *)
-    let ppu = PPU.process_ppu st.gpu_mem ppu @@ PPU.dot_of_mc mc in
+    let st, ppu = PPU.process_ppu st ppu @@ PPU.dot_of_mc mc @@ State.get_speed st in
     st, ppu
   | Stopped n ->
     (* if n = *)

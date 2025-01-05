@@ -32,7 +32,9 @@ let bg_wh = 256
 let window_wh = 256
 let line_duration = 456
 
-let ref framebuffer = Array.make_matrix 144 160 0
+let cgb_mode = true
+
+let framebuffer = Array.make_matrix 144 160 0
 
 type pixel = { color: int; palette : int; sprite_prio : int; bg_prio : int; sprite_buffer : int list }
 
@@ -46,6 +48,31 @@ let dot_of_mc mcycles speed =
 let scan_oam ppu st = ppu
 
 (* TODO - actual line rendering *)
+
+(* let render_bgw_line st ppu ly =
+  let render_bg_line t ly tile_data_area =
+    let scy, scx = st.gpu_mem.lcd_regs.scy, st.gpu_mem.lcd_regs.scx in
+    let y = (scy + ly) mod bg_wh in
+    let bg_tile_map_area = LCD_Regs.bg_tm_area st.gpu_mem.lcd_regs in
+    let row_in_tile = y mod 8 in
+    let lx = ref 0 in
+    while !lx < screen_w do
+      let x = (scx + !lx) mod bg_wh in
+      let col_in_tile = x mod 8 in
+      let tile_index = VRAM.get_tile_index st.gpu_mem.vram bg_tile_map_area y x in
+      let p1, p2 = VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_data_area row_in_tile in
+      let len =
+        if col_in_tile > 0 then
+          8 - col_in_tile
+      else if screen_w - !lx < 8 then
+        screen_w - !lx
+      else
+        8
+      in
+      for i = 0 to len -1 do
+        let color = Pallettes.lookup st.gpu_mem.palettes  *)
+
+
 let render_line st ppu = ()
 
 

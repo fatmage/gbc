@@ -18,6 +18,21 @@ module VRAM = struct
       if v land 1 = bank then m else (b2, b1, v land 1)
     | (b1 ,b2, bank), i -> (Bank.set b1 i v, b2, bank)
 
+  let get_tile_index (b1, b2, bank) area y x =
+    let bank0 = if bank = 0 then b1 else b2 in
+    Bank.get bank0 (area + ((y/8) * 32) + (x/8))
+
+  let get_tile_attributes (b1, b2, bank) area y x =
+    let bank1 = if bank = 0 then b2 else b1 in
+    Bank.get bank1 (area + ((y/8) * 32) + (x/8))
+
+  let get_tile_data_row m area index row =
+    match area with
+    | 0x8000 -> (get m (index * 16 + row * 2)), (get m (index * 16 + row * 2 + 1))
+    | 0x9000 ->
+      let s_index = (index land 0x7F) - (index land 0x80) in
+      (get m (s_index * 16)), (get m (index * 16 + 1))
+
   let in_range i = Bank.in_range i || i = 0xFF4F
 
 end
@@ -56,7 +71,17 @@ module LCD_Regs = struct
     | 0xFF4A -> { m with wy = v }
     | 0xFF4B -> { m with wx = v }
 
-  (* STAT info *)
+  (* LCDC *)
+  let lcd_enabled { lcdc; _ } = lcdc land 0x80 > 0
+  let window_tm_area { lcdc; _ } = if lcdc land 0x40 > 0 then 0x9C00 else 0x9800
+  let window_enabled { lcdc; _ } = lcdc land 0x20 > 0
+  let bw_base_pointer { lcdc; _ } = if lcdc land 0x10 > 0 then 0x8000 else 0x9000
+  let bg_tm_area { lcdc; _ } = if lcdc land 0x08 > 0 then 0x9C00 else 0x9800
+  let obj_size { lcdc; _ } = if lcdc land 0x04 > 0 then 16 else 8
+  let obj_enabled { lcdc; _ } = lcdc land 0x02 > 0
+  let bgwindow_ep { lcdc; _ } = lcdc land 0x01 > 0
+
+  (* STAT *)
   let lyc_cond { stat; _ } = stat land 0x40 > 0
   let mode2_cond { stat; _ } = stat land 0x20 > 0
   let mode1_cond { stat; _ } = stat land 0x10 > 0
@@ -65,14 +90,6 @@ module LCD_Regs = struct
   let get_mode { stat; _ } = stat land 0x03 |> GPUmode.of_int
   let set_mode m mode = match m with  { stat; _ } -> { m with stat = (stat land 0xF8) lor mode }
 
-  let lcd_enabled { lcdc; _ } = lcdc land 0x80 = 1
-  let window_tm_area { lcdc; _ } = if lcdc land 0x40 = 1 then 0x9C00 else 0x9800
-  let window_enabled { lcdc; _ } = lcdc land 0x20 = 1
-  let bw_base_pointer { lcdc; _ } = if lcdc land 0x10 = 1 then 0x8000 else 0x8800
-  let bg_tm_area { lcdc; _ } = if lcdc land 0x08 = 1 then 0x9C00 else 0x9800
-  let obj_size { lcdc; _ } = lcdc land 0x04 = 1
-  let obj_enabled { lcdc; _ } = lcdc land 0x02 = 1
-  let bgwindow_ep { lcdc; _ } = lcdc land 0x01 = 1
 
   let inc_ly m =
     let ly = m.ly + 1 in
@@ -127,7 +144,6 @@ module Palettes = struct
 end
 
 type t = { mode : GPUmode.t; vram : VRAM.t; oam : OAM.t; lcd_regs : LCD_Regs.t; palettes : Palettes.t }
-
 let initial = { mode = OAM_scan 0; vram = VRAM.initial; oam = OAM.initial; lcd_regs = LCD_Regs.initial; palettes = Palettes.initial }
 let get t =
   function

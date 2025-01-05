@@ -156,7 +156,14 @@ module IE = struct
   let initial = 0
   let get m _ = m
   let set m _ v = v land 0b11111
-  let in_range i = i = 0xFFFF
+
+  let enabled_joypad m = m lor 0b10000 > 0
+  let enabled_serial m = m lor 0b01000 > 0
+  let enabled_timer m  = m lor 0b00100 > 0
+  let enabled_LCD m    = m lor 0b00010 > 0
+  let enabled_VBlank m = m lor 0b00001 > 0
+
+  let in_range = (=) 0xFFFF
 end
 
 

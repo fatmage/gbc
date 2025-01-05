@@ -12,7 +12,7 @@ let of_int = function
   | _ -> failwith "Nonexistent rendering mode"
 
 let to_int = function
-  | HBlank _,_         -> 0
-  | VBlank _,_         -> 1
-  | OAM_scan _,_       -> 2
-  | Drawing_pixels _,_ -> 3
+  | HBlank (_,_)         -> 0
+  | VBlank _             -> 1
+  | OAM_scan _           -> 2
+  | Drawing_pixels (_,_) -> 3

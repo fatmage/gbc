@@ -173,10 +173,15 @@ let inc_SP st = { st with regs = { st.regs with _SP = st.regs._SP + 2 } }
 let dec_SP st = { st with regs = { st.regs with _SP = st.regs._SP - 2 } }
 let adv_PC st c = { st with regs = { st.regs with _PC = st.regs._PC + c } }
 
-let get_speed st = IOregs.Timer.get_speed st.timer
+let get_speed st = Timer.get_speed st.timer
 
-let request_joypad st = { st with iflag = Interrupts.request_joypad st.iflag }
-let request_serial st = { st with iflag = Interrupts.request_serial st.iflag }
-let request_timer st = { st with iflag = Interrupts.request_timer st.iflag }
-let request_LCD st = { st with iflag = Interrupts.request_LCD st.iflag }
-let request_VBlank st = { st with iflag = Interrupts.request_VBlank st.iflag }
+let request_joypad st = if IE.enabled_joypad st.ie then { st with iflag = Interrupts.request_joypad st.iflag } else st
+let request_serial st = if IE.enabled_serial st.ie then { st with iflag = Interrupts.request_serial st.iflag } else st
+let request_timer st = if IE.enabled_timer st.ie then { st with iflag = Interrupts.request_timer st.iflag } else st
+let request_LCD st = if IE.enabled_LCD st.ie then { st with iflag = Interrupts.request_LCD st.iflag } else st
+let request_VBlank st = if IE.enabled_VBlank st.ie then { st with iflag = Interrupts.request_VBlank st.iflag } else st
+
+let inc_ly st = { st with gpu_mem = GPUmem.inc_ly st.gpu_mem }
+
+let update_mode st mode = { st with gpu_mem = GPUmem.update_mode st.gpu_mem mode }
+let change_mode st mode = { st with gpu_mem = GPUmem.change_mode st.gpu_mem mode }

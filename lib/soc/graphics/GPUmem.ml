@@ -63,6 +63,7 @@ module LCD_Regs = struct
   let mode0_cond { stat; _ } = stat land 0x08 > 0
   let lyc_ly_eq { stat; _ } = stat land 0x04 > 0
   let get_mode { stat; _ } = stat land 0x03 |> GPUmode.of_int
+  let set_mode m mode = match m with  { stat; _ } -> { m with stat = (stat land 0xF8) lor mode }
 
   let lcd_enabled { lcdc; _ } = lcdc land 0x80 = 1
   let window_tm_area { lcdc; _ } = if lcdc land 0x40 = 1 then 0x9C00 else 0x9800
@@ -72,7 +73,15 @@ module LCD_Regs = struct
   let obj_size { lcdc; _ } = lcdc land 0x04 = 1
   let obj_enabled { lcdc; _ } = lcdc land 0x02 = 1
   let bgwindow_ep { lcdc; _ } = lcdc land 0x01 = 1
-  let cmp_lyc m = if m.ly = m.lyc then { m with stat = m.stat lor 0x04 }, true else m, false
+
+  let inc_ly m =
+    let ly = m.ly + 1 in
+    if ly >= 160 then  { m with ly = 0 }  else { m with ly }
+  let cmp_lyc m =
+    if m.ly = m.lyc then
+      { m with stat = m.stat lor 0x04 }, true
+    else
+      { m with stat = m.stat land 0xBF }, false
   let in_range i = (0xFF40 <= i && i <= 0xFF45) || i = 0xFF4A || i = 0xFF4B
 end
 
@@ -137,3 +146,14 @@ let set t i v =
 let in_range i = VRAM.in_range i || OAM.in_range i || LCD_Regs.in_range i || Palettes.in_range i
 
 let get_mode m = m.mode
+
+let inc_ly m = { m with lcd_regs = LCD_Regs.inc_ly m.lcd_regs }
+
+
+let update_mode m mode = { m with mode }
+let change_mode m mode =
+  match mode with
+  | GPUmode.HBlank (_,_)         -> { m with mode; lcd_regs = LCD_Regs.set_mode m.lcd_regs 0 }
+  | GPUmode.VBlank _             -> { m with mode; lcd_regs = LCD_Regs.set_mode m.lcd_regs 1 }
+  | GPUmode.OAM_scan _           -> { m with mode; lcd_regs = LCD_Regs.set_mode m.lcd_regs 2 }
+  | GPUmode.Drawing_pixels (_,_) -> { m with mode; lcd_regs = LCD_Regs.set_mode m.lcd_regs 3 }

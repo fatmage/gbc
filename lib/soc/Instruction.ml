@@ -1,7 +1,320 @@
 (* Instruction type *)
 
+module type S = sig
+  module State : State.S
 
-module Make (State : State.S) = struct
+  type next_action = Next | Jump | Halt | Stop
+  type instruction = State.t -> State.t * next_action * int
+  type condition = Cnz | Cz | Cnc | Cc
+
+  val iADC_Ar8 : Regs.r8 -> instruction
+  val iADC_AHLp : instruction
+  val iADC_An8 : int -> instruction
+  val iADD_Ar8 : Regs.r8 -> instruction
+  val iADD_AHLp : instruction
+  val iADD_An8 : int -> instruction
+
+  val iAND_Ar8 : Regs.r8 -> instruction
+  val iAND_AHLp : instruction
+  val iAND_An8 : int -> instruction
+  val iCP_Ar8 : Regs.r8 -> instruction
+  val iCP_AHLp : instruction
+
+  val iCP_An8 : int -> instruction
+
+
+  val iDEC_r8 : Regs.r8 -> instruction
+
+
+  val iDEC_HLp : instruction
+
+
+  val iINC_r8 : Regs.r8 -> instruction
+
+
+  val iINC_HLp : instruction
+
+
+  val iOR_Ar8 : Regs.r8 -> instruction
+
+  val iOR_AHLp : instruction
+
+
+  val iOR_An8 : int -> instruction
+
+
+  val iSBC_Ar8 : Regs.r8 -> instruction
+
+
+  val iSBC_AHLp : instruction
+
+
+  val iSBC_An8 : int -> instruction
+
+
+  val iSUB_Ar8 : Regs.r8 -> instruction
+
+
+  val iSUB_AHLp : instruction
+
+
+  val iSUB_An8 : int -> instruction
+
+
+  val iXOR_Ar8 : Regs.r8 -> instruction
+
+
+  val iXOR_AHLp : instruction
+
+
+  val iXOR_An8 : int -> instruction
+
+
+  (* 16-bit arithmetic instructions *)
+  val iADD_HLr16 : Regs.r16 -> instruction
+
+
+  val iDEC_r16 : Regs.r16 -> instruction
+
+
+  val iINC_r16 : Regs.r16 -> instruction
+
+
+  (* Bit Operations Instructions *)
+  val iBIT_u3r8 : int -> Regs.r8 -> instruction
+
+
+  val iBIT_u3HLp : int -> instruction
+
+
+  val iRES_u3r8 : int -> Regs.r8 -> instruction
+
+
+  val iRES_u3HLp : int -> instruction
+
+
+  val iSET_u3r8 : int -> Regs.r8 -> instruction
+
+
+  val iSET_u3HLp : int -> instruction
+
+
+  val iSWAP_r8 : Regs.r8 -> instruction
+
+  val iSWAP_HLp : instruction
+
+
+  (* Bit Shift Instructions *)
+  val iRL_r8 : Regs.r8 -> instruction
+
+
+  val iRL_HLp : instruction
+
+
+  val iRLA : instruction
+
+
+  val iRLC_r8 : Regs.r8 -> instruction
+
+
+  val iRLC_HLp : instruction
+
+
+  val iRLCA : instruction
+
+
+  val iRR_r8 : Regs.r8 -> instruction
+
+
+  val iRR_HLp : instruction
+
+
+  val iRRA : instruction
+
+
+  val iRRC_r8 : Regs.r8 -> instruction
+
+
+  val iRRC_HLp : instruction
+
+
+  val iRRCA : instruction
+
+
+  val iSLA_r8 : Regs.r8 -> instruction
+
+
+  val iSLA_HLp : instruction
+
+
+  val iSRA_r8 : Regs.r8 -> instruction
+
+
+  val iSRA_HLp : instruction
+
+
+  val iSRL_r8 : Regs.r8 -> instruction
+
+
+  val iSRL_HLp : instruction
+
+
+  (* Load Instructions *)
+  val iLD_rr8 : Regs.r8 -> Regs.r8 -> instruction
+
+
+  val iLD_rn8 : Regs.r8 -> int -> instruction
+
+
+  val iLD_rn16 : Regs.r16 -> int -> instruction
+
+
+  val iLD_HLpr8 : Regs.r8 -> instruction
+
+  val iLD_HLpn8 : int -> instruction
+
+
+  val iLD_r8HLp : Regs.r8 -> instruction
+
+
+  val iLD_r16pA : Regs.r16 -> instruction
+
+
+  val iLD_n16pA : int -> instruction
+
+
+  val iLDH_n16pA : int -> instruction
+
+
+  val iLDH_CpA : instruction
+
+
+  val iLD_Ar16p : Regs.r16 -> instruction
+
+
+  val iLD_An16p : int -> instruction
+
+
+  val iLDH_An16p : int -> instruction
+
+
+  val iLDH_ACp : instruction
+
+
+  val iLD_HLIpA : instruction
+
+
+  val iLD_HLDpA : instruction
+
+
+  val iLD_AHLIp : instruction
+
+
+  val iLD_AHLDp : instruction
+
+
+  (* Jumps and Subroutines *)
+
+  val check_condition : State.t -> condition -> bool
+
+  val iCALL_n16 : int -> instruction
+
+
+  val iCALL_cn16 : condition -> int -> instruction
+
+
+  val iJP_HL : instruction
+
+
+  val iJP_n16 : int -> instruction
+
+
+  val iJP_cn16 : condition -> int -> instruction
+
+
+  val iJR_n8 : int -> instruction
+
+
+  val iJR_cn8 : condition -> int -> instruction
+
+
+  val iRET : instruction
+
+  val iRET_c : condition -> instruction
+
+  val iRETI : instruction
+
+  val iRST_vec : int -> instruction
+
+  (* Stack Operations Instructions *)
+  val iADD_HLSP : instruction
+
+
+  val iADD_SPe8 : int -> instruction
+
+
+  val iDEC_SP : instruction
+
+
+  val iINC_SP : instruction
+
+
+  val iLD_SPn16 : int -> instruction
+
+
+  val iLD_n16pSP : int -> instruction
+
+
+  val iLD_HLSPe8 : int -> instruction
+
+
+  val iLD_SPHL : instruction
+
+
+  val iPOP_AF : instruction
+
+
+  val iPOP_r16 : Regs.r16 -> instruction
+
+
+  val iPUSH_AF : instruction
+
+
+  val iPUSH_r16 : Regs.r16 -> instruction
+
+
+  (* Miscellaneous Instructions *)
+  val iCCF : instruction
+
+  val iCPL : instruction
+
+
+  (* May be wrong *)
+  val iDAA : instruction
+
+
+  val iDI : instruction
+
+  val iEI : instruction
+
+  val iHALT : instruction
+
+  val iNOP : instruction
+
+  val iSCF : instruction
+
+  val iSTOP : int -> instruction
+
+  (* Not an actual instruction *)
+  val interrupt_service_routine : int -> instruction
+
+end
+
+
+
+module Make (M : State.S) : S = struct
+
+  module State = M
 
 type next_action = Next | Jump | Halt | Stop
 

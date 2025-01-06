@@ -15,7 +15,7 @@ module type S = sig
     hram : HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
-    dma_oam : DMAState.OAM.t; dma_vram : DMAState.VRAM.t
+    dma_oam : DMAState.OAM.t; dma_vram : DMAState.VRAM.t; cgb_mode : bool
   }
 
   module Bus : sig
@@ -78,7 +78,7 @@ module Make (ROM : ROM.S) : S = struct
     hram : HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
-    dma_oam : DMAState.OAM.t; dma_vram : DMAState.VRAM.t
+    dma_oam : DMAState.OAM.t; dma_vram : DMAState.VRAM.t; cgb_mode : bool
   }
 
   module Bus = struct
@@ -201,7 +201,8 @@ module Make (ROM : ROM.S) : S = struct
       serial = Serial.initial; timer = Timer.initial; iflag = Interrupts.initial;
       audio = Audio.initial; wave = WavePattern.initial;
       ie = IE.initial; ime = Disabled; activity = Running;
-      dma_oam = DMAState.OAM.initial; dma_vram = DMAState.VRAM.initial
+      dma_oam = DMAState.OAM.initial; dma_vram = DMAState.VRAM.initial;
+      cgb_mode = true
     }
 
   let set_r8 st r v = { st with regs = Regs.set_r8 st.regs r v }

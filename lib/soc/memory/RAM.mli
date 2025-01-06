@@ -1,10 +1,9 @@
 
-module type RAM = sig
+module type S = sig
 include Addressable.S
 end
 
 val make_chunk : int -> int -> (module Addressable.S)
 
-module RAM : RAM
-module WRAM : RAM
-module HRAM : RAM
+module WRAM : S
+module HRAM : S

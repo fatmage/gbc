@@ -5,9 +5,11 @@ end
 
 module type S = sig
 
-  module OAM : RAM.RAM
+  module OAM : sig
+  include Addressable.S
+  end
   module VRAM : sig
-    include RAM.RAM
+    include RAM.S
     val get_tile_index : t -> int -> int -> int -> int
     val get_tile_attributes : t -> int -> int -> int -> int
     val get_tile_data_row : t -> int -> int -> int -> int * int
@@ -69,9 +71,17 @@ end
 
 module VRAMBank = (val RAM.make_chunk 8912 0x8000)
 
+
 module Make (M : Palettes_intf) : S = struct
 
-  module OAM = RAM.RAM
+  (* TODO *)
+  module OAM = struct
+    type t = int
+    let initial = 0
+    let get m _ = m
+    let set _ _ v = v
+    let in_range i = i >= 0xFE00 && i <= 0xFE9F
+  end
 
   module VRAM = struct
     module Bank = VRAMBank

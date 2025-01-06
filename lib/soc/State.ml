@@ -1,5 +1,5 @@
 open IOregs
-open RAM
+
 
 
 module type S = sig
@@ -8,12 +8,13 @@ module type S = sig
 
   module ROM : ROM.S
   module GPUmem : GPUmem.S
+  module Ext_RAM : RAM.S
 
   type t =
   {
     regs: Regs.regfile; flags : Regs.flags;
-    rom: ROM.t; ram : RAM.t; wram : WRAM.t; gpu_mem : GPUmem.t;
-    hram : HRAM.t; joypad : Joypad.t; serial: Serial.t;
+    rom: ROM.t; ext_ram : Ext_RAM.t; wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
+    hram : RAM.HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
     dma_oam : DMAState.OAM.t; dma_vram : DMAState.VRAM.t; cgb_mode : bool
@@ -67,19 +68,20 @@ end
 
 
 
-module Make (ROM : ROM.S) (GPUmem : GPUmem.S) : S = struct
+module Make (M1 : ROM.S) (M2 : GPUmem.S) (M3 : RAM.S) : S = struct
   type interrupts = Disabled | Enabling | Enabled
 
   type cpu_activity = Running | Halted | Stopped of int
 
-  module ROM = ROM
-  module GPUmem = GPUmem
+  module ROM = M1
+  module GPUmem = M2
+  module Ext_RAM = M3
 
   type t =
   {
     regs: Regs.regfile; flags : Regs.flags;
-    rom: ROM.t; ram : RAM.t; wram : WRAM.t; gpu_mem : GPUmem.t;
-    hram : HRAM.t; joypad : Joypad.t; serial: Serial.t;
+    rom: ROM.t; ext_ram : Ext_RAM.t; wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
+    hram : RAM.HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
     dma_oam : DMAState.OAM.t; dma_vram : DMAState.VRAM.t; cgb_mode : bool
@@ -108,10 +110,10 @@ module Make (ROM : ROM.S) (GPUmem : GPUmem.S) : S = struct
         -> ROM.get st.rom addr
       | _ when GPUmem.in_range addr (* VRAM, OAM, LCD control, palettes *)
         -> GPUmem.get st.gpu_mem addr
-      | _ when RAM.in_range addr (* External RAM *)
-        -> RAM.get st.ram addr
-      | _ when WRAM.in_range addr (* WRAM *)
-        -> WRAM.get st.wram addr
+      | _ when Ext_RAM.in_range addr (* External RAM *)
+        -> Ext_RAM.get st.ext_ram addr
+      | _ when RAM.WRAM.in_range addr (* WRAM *)
+        -> RAM.WRAM.get st.wram addr
       (* ECHO RAM *)
       (* OAM *)
       (* I/O Registers *)
@@ -133,8 +135,8 @@ module Make (ROM : ROM.S) (GPUmem : GPUmem.S) : S = struct
       (* VRAM DMA *)
       (* BG/OBJ palettes *)
       (* WRAM bank select *)
-      | _ when HRAM.in_range addr (* HRAM *)
-        -> HRAM.get st.hram addr
+      | _ when RAM.HRAM.in_range addr (* HRAM *)
+        -> RAM.HRAM.get st.hram addr
       | _ when IE.in_range addr (* Interrupt Enable register *)
         -> IE.get st.ie addr
       | _ when DMAState.VRAM.in_range addr
@@ -151,10 +153,10 @@ module Make (ROM : ROM.S) (GPUmem : GPUmem.S) : S = struct
         -> { st with rom = ROM.set st.rom addr v }
       | _ when GPUmem.VRAM.in_range addr (* VRAM, OAM, LCD control, palettes *)
         -> { st with gpu_mem = GPUmem.set st.gpu_mem addr v }
-      | _ when RAM.in_range addr (* External RAM *)
-        -> { st with ram = RAM.set st.ram addr v }
-      | _ when WRAM.in_range addr (* WRAM *)
-        -> { st with wram = WRAM.set st.wram addr v }
+      | _ when Ext_RAM.in_range addr (* External RAM *)
+        -> { st with ext_ram = Ext_RAM.set st.ext_ram addr v }
+      | _ when RAM.WRAM.in_range addr (* WRAM *)
+        -> { st with wram = RAM.WRAM.set st.wram addr v }
       (* ECHO RAM *)
       (* OAM *)
       (* I/O Registers *)
@@ -176,8 +178,8 @@ module Make (ROM : ROM.S) (GPUmem : GPUmem.S) : S = struct
       (* VRAM DMA *)
       (* BG/OBJ palettes *)
       (* WRAM bank select *)
-      | _ when HRAM.in_range addr (* HRAM *)
-        -> { st with hram = HRAM.set st.hram addr v }
+      | _ when RAM.HRAM.in_range addr (* HRAM *)
+        -> { st with hram = RAM.HRAM.set st.hram addr v }
       | _ when IE.in_range addr (* Interrupt Enable register *)
         -> { st with ie = IE.set st.ie addr v }
       | _ when DMAState.VRAM.in_range addr
@@ -200,8 +202,8 @@ module Make (ROM : ROM.S) (GPUmem : GPUmem.S) : S = struct
   let initial =
     {
       regs = Regs.initial_regfile; flags = Regs.initial_flags;
-      rom = ROM.initial; ram = RAM.initial; wram = WRAM.initial;
-      gpu_mem = GPUmem.initial; hram = HRAM.initial; joypad = Joypad.initial;
+      rom = ROM.initial; ext_ram = Ext_RAM.initial; wram = RAM.WRAM.initial;
+      gpu_mem = GPUmem.initial; hram = RAM.HRAM.initial; joypad = Joypad.initial;
       serial = Serial.initial; timer = Timer.initial; iflag = Interrupts.initial;
       audio = Audio.initial; wave = WavePattern.initial;
       ie = IE.initial; ime = Disabled; activity = Running;

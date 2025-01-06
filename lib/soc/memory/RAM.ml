@@ -73,14 +73,10 @@ end)
     *)
 
 
-module type RAM = sig
+module type S = sig
   include Addressable.S
 end
 
-module RAM = struct
-  module M = (val make_chunk 8912 0xA000)
-  include M
-end
 
 module WRAM = struct
   module Bank0 = (val make_chunk 4096 0xC000)

@@ -3,8 +3,6 @@
 
 ## Roadmap:
 
- - implement OAM memory
-
  - finish ppu
 
  - implement cartridge header reading

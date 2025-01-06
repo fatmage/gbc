@@ -1,5 +1,7 @@
 module type Palettes_intf = sig
   include Addressable.S
+
+  (* val lookup_bg : t -> *)
 end
 
 
@@ -71,15 +73,90 @@ end
 
 module VRAMBank = (val RAM.make_chunk 8912 0x8000)
 
+module Palettes_CGB : Palettes_intf = struct
+  type t =
+    {
+      (* DMG registers *)
+      bgp : int; obp0 : int; obp1 : int;
+      (* CGB registers + palette memory *)
+      bcps: int; bcpd : int; ocps: int; ocpd: int;
+      obj_cram : int list; (* length 64 *)
+      bgw_cram : int list; (* length 64 *)
+    }
+
+  let initial =
+    {
+      bgp = 0; obp0 = 0; obp1 = 0;
+      bcps = 0; bcpd = 0; ocps = 0; ocpd = 0;
+      obj_cram = List.init 64  (fun _ -> 0);
+      bgw_cram = List.init 64  (fun _ -> 0)
+    }
+
+  let get m =
+    function
+    | 0xFF47 -> m.bgp
+    | 0xFF48 -> m.obp0
+    | 0xFF49 -> m.obp1
+    | 0xFF68 -> m.bcps
+    | 0xFF69 -> m.bcpd
+    | 0xFF6A -> m.ocps
+    | 0xFF6B -> m.ocpd
+
+  let set m i v =
+    match i with
+    | 0xFF47 -> { m with bgp  = v }
+    | 0xFF48 -> { m with obp0 = v }
+    | 0xFF49 -> { m with obp1 = v }
+    | 0xFF68 -> { m with bcps = v }
+    | 0xFF69 -> { m with bcpd = v }
+    | 0xFF6A -> { m with ocps = v }
+    | 0xFF6B -> { m with ocpd = v }
+
+  let in_range i = (0xFF47 <= i && i <= 0xFF48) || (0xFF68 <= i && i <= 0xFF6B)
+end
+
+
 
 module Make (M : Palettes_intf) : S = struct
 
+  module Palettes = M
+
   (* TODO *)
   module OAM = struct
-    type t = int
-    let initial = 0
-    let get m _ = m
-    let set _ _ v = v
+
+    type object_data = { y_p : int; x_p : int; t_index : int; flags : int }
+
+    let obj_empty = { y_p = 0; x_p = 0; t_index = 0; flags = 0 }
+
+    type t = object_data list
+    let initial = List.init 40 (fun _ -> obj_empty )
+    let get xs i =
+      let obj_i = i / 4 in
+      let in_obj = i mod 4 in
+      let { y_p; x_p; t_index; flags} = List.nth xs obj_i in
+      match in_obj with
+      | 0 -> y_p
+      | 1 -> x_p
+      | 2 -> t_index
+      | 3 -> flags
+    let set xs i v =
+      let obj_i = i / 4 in
+      let in_obj = i mod 4 in
+      let rec aux xs i v acc =
+        match xs, i with
+        | x::xs, 0 ->
+          let new_x =
+            begin match in_obj with
+            | 0 -> { x with y_p = v }
+            | 1 -> { x with x_p = v }
+            | 2 -> { x with t_index = v }
+            | 3 -> { x with flags = v }
+            end
+          in (List.rev acc) @ (new_x :: xs)
+        | x::xs, i -> aux xs (i - 1) v (x::acc)
+      in
+      aux xs obj_i v []
+
     let in_range i = i >= 0xFE00 && i <= 0xFE9F
   end
 
@@ -183,47 +260,6 @@ module Make (M : Palettes_intf) : S = struct
       else
         { m with stat = m.stat land 0xBF }, false
     let in_range i = (0xFF40 <= i && i <= 0xFF45) || i = 0xFF4A || i = 0xFF4B
-  end
-
-
-  module Palettes = struct
-    type t =
-      {
-        (* DMG registers *)
-        bgp : int; obp0 : int; obp1 : int;
-        (* CGB registers + palette memory *)
-        bcps: int; bcpd : int; ocps: int; ocpd: int;
-        cram : int list (* length 64 *)
-      }
-
-    let initial =
-      {
-        bgp = 0; obp0 = 0; obp1 = 0;
-        bcps = 0; bcpd = 0; ocps = 0; ocpd = 0;
-        cram = List.init 64  (fun _ -> 0)
-      }
-
-    let get m =
-      function
-      | 0xFF47 -> m.bgp
-      | 0xFF48 -> m.obp0
-      | 0xFF49 -> m.obp1
-      | 0xFF68 -> m.bcps
-      | 0xFF69 -> m.bcpd
-      | 0xFF6A -> m.ocps
-      | 0xFF6B -> m.ocpd
-
-    let set m i v =
-      match i with
-      | 0xFF47 -> { m with bgp  = v }
-      | 0xFF48 -> { m with obp0 = v }
-      | 0xFF49 -> { m with obp1 = v }
-      | 0xFF68 -> { m with bcps = v }
-      | 0xFF69 -> { m with bcpd = v }
-      | 0xFF6A -> { m with ocps = v }
-      | 0xFF6B -> { m with ocpd = v }
-
-    let in_range i = (0xFF47 <= i && i <= 0xFF48) || (0xFF68 <= i && i <= 0xFF6B)
   end
 
   type t = { mode : GPUmode.t; vram : VRAM.t; oam : OAM.t; lcd_regs : LCD_Regs.t; palettes : Palettes.t }

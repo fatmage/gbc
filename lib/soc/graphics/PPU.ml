@@ -74,14 +74,14 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     let render_bg_line t ly tile_data_area =
       let scy, scx = st.gpu_mem.lcd_regs.scy, st.gpu_mem.lcd_regs.scx in
       let y = (scy + ly) mod bg_wh in
-      let bg_tile_map_area = LCD_Regs.bg_tm_area st.gpu_mem.lcd_regs in
+      let bg_tile_map_area = State.GPUmem.LCD_Regs.bg_tm_area st.gpu_mem.lcd_regs in
       let row_in_tile = y mod 8 in
       let lx = ref 0 in
       while !lx < screen_w do
         let x = (scx + !lx) mod bg_wh in
         let col_in_tile = x mod 8 in
-        let tile_index = VRAM.get_tile_index st.gpu_mem.vram bg_tile_map_area y x in
-        let p1, p2 = VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_data_area row_in_tile in
+        let tile_index = State.GPUmem.VRAM.get_tile_index st.gpu_mem.vram bg_tile_map_area y x in
+        let p1, p2 = State.GPUmem.VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_data_area row_in_tile in
         let len =
           if col_in_tile > 0 then
             8 - col_in_tile
@@ -91,7 +91,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           8
         in
         for i = 0 to len -1 do
-          let color = Pallettes.lookup st.gpu_mem.palettes  *)
+          let color = State.GPUmem.Palettes.lookup st.gpu_mem.palettes  *)
 
 
   let render_line st ppu = ()

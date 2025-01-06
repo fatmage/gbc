@@ -1,10 +1,10 @@
 (* Instruction type *)
 
 module type S = sig
-  module State : State.S
+  type state
 
   type next_action = Next | Jump | Halt | Stop
-  type instruction = State.t -> State.t * next_action * int
+  type instruction = state -> state * next_action * int
   type condition = Cnz | Cz | Cnc | Cc
 
   val iADC_Ar8 : Regs.r8 -> instruction
@@ -215,7 +215,7 @@ module type S = sig
 
   (* Jumps and Subroutines *)
 
-  val check_condition : State.t -> condition -> bool
+  val check_condition : state -> condition -> bool
 
   val iCALL_n16 : int -> instruction
 
@@ -312,15 +312,15 @@ end
 
 
 
-module Make (M : State.S) : S = struct
+module Make (State : State.S) : (S with type state = State.t) = struct
 
-  module State = M
+  type state = State.t
 
-type next_action = Next | Jump | Halt | Stop
+  type next_action = Next | Jump | Halt | Stop
 
-type instruction = State.t -> State.t * next_action * int
+  type instruction = State.t -> State.t * next_action * int
 
-type condition = Cnz | Cz | Cnc | Cc
+  type condition = Cnz | Cz | Cnc | Cc
 
 (* 8-bit arithmetic and logic instructions *)
   let iADC_Ar8 r8 : instruction = fun st ->

@@ -1,19 +1,19 @@
 
 module type S = sig
-  module State : State.S
+  type state
   module PPU : PPU.S
   module Instruction : Instruction.S
 
-  val cpu_step : State.t -> PPU.t -> State.t * PPU.t
+  val cpu_step : state-> PPU.t -> state * PPU.t
 
 end
 
-module Make (M1 : State.S) : S = struct
-  module State = M1
-  module PPU = PPU.Make (M1)
-  module Instruction = Instruction.Make (M1)
-
-
+module Make (State : State.S) : (S with type state = State.t) = struct
+  type state = State.t
+  module PPU = PPU.Make (State)
+  module Instruction = Instruction.Make (State)
+  module DMA_OAM = DMAUnit.MakeOAM (State)
+  module DMA_VRAM = DMAUnit.MakeOAM (State)
   let match_prefixed st =
     match State.Bus.get8 st (st.regs._PC + 1) with
     | 0x00 -> Instruction.iRLC_r8 B
@@ -546,7 +546,7 @@ module Make (M1 : State.S) : S = struct
     | 0 -> 0
     | n -> aux n 1 1
 
-  let fetch_decode_execute (st : State.t) =
+  let fetch_decode_execute (st : state) =
     let st, instr =
       match st.ime with
       | Enabled  ->
@@ -573,7 +573,7 @@ module Make (M1 : State.S) : S = struct
     | st, Next, cycles ->
       { st with regs = { st.regs with _PC = st.regs._PC + cycles } }, cycles
 
-  let poll_interrupts_halted (st : State.t) =
+  let poll_interrupts_halted (st : state) =
     let st, addr, (act : State.cpu_activity) =
       match st.ime with
       | Enabled ->
@@ -601,7 +601,7 @@ module Make (M1 : State.S) : S = struct
     | Running, n    -> Instruction.interrupt_service_routine n st
     | Halted,  _    -> st, Halt, 1
 
-  let cpu_step st ppu =
+  let cpu_step (st : state) ppu =
     match st.activity with
     | Running ->
       (* interrupt or fetch decode execute *)
@@ -618,8 +618,8 @@ module Make (M1 : State.S) : S = struct
           st
       in
       (* dma *)
-      let st = DMAUnit.OAM.exec_dma st mc in
-      let st = DMAUnit.VRAM.exec_dma st mc in
+      let st = DMA_OAM.exec_dma st mc in
+      let st = DMA_VRAM.exec_dma st mc in
       (* ppu *)
       let st, ppu = PPU.process_ppu st ppu @@ PPU.dot_of_mc mc @@ State.get_speed st in
       st, ppu
@@ -639,9 +639,9 @@ module Make (M1 : State.S) : S = struct
           st
       in
       (* dma  *)
-      let st = DMAUnit.OAM.exec_dma st mc in
+      let st = DMA_OAM.exec_dma st mc in
       (* hdma *)
-      let st = DMAUnit.VRAM.exec_dma st mc in
+      let st = DMA_VRAM.exec_dma st mc in
       (* ppu  *)
       let st, ppu = PPU.process_ppu st ppu @@ PPU.dot_of_mc mc @@ State.get_speed st in
       st, ppu

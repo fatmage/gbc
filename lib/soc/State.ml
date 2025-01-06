@@ -7,6 +7,7 @@ module type S = sig
   type cpu_activity = Running | Halted | Stopped of int
 
   module ROM : ROM.S
+  module GPUmem : GPUmem.S
 
   type t =
   {
@@ -57,6 +58,8 @@ module type S = sig
   val request_LCD : t -> t
   val request_VBlank : t -> t
   val inc_ly : t -> t
+  val reset_ly : t -> t
+  val get_ly : t -> int
   val update_mode : t -> GPUmode.t -> t
   val change_mode : t -> GPUmode.t -> t
 end
@@ -64,12 +67,13 @@ end
 
 
 
-module Make (ROM : ROM.S) : S = struct
+module Make (ROM : ROM.S) (GPUmem : GPUmem.S) : S = struct
   type interrupts = Disabled | Enabling | Enabled
 
   type cpu_activity = Running | Halted | Stopped of int
 
   module ROM = ROM
+  module GPUmem = GPUmem
 
   type t =
   {
@@ -248,6 +252,8 @@ module Make (ROM : ROM.S) : S = struct
   let request_VBlank st = if IE.enabled_VBlank st.ie then { st with iflag = Interrupts.request_VBlank st.iflag } else st
 
   let inc_ly st = { st with gpu_mem = GPUmem.inc_ly st.gpu_mem }
+  let reset_ly st = { st with gpu_mem = GPUmem.reset_ly st.gpu_mem }
+  let get_ly st = GPUmem.get_ly st.gpu_mem
 
   let update_mode st mode = { st with gpu_mem = GPUmem.update_mode st.gpu_mem mode }
   let change_mode st mode = { st with gpu_mem = GPUmem.change_mode st.gpu_mem mode }

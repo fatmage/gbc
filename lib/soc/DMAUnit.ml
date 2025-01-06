@@ -1,14 +1,14 @@
 
 module type S = sig
-  module State : State.S
-  val exec_dma : State.t -> int -> State.t
+  type state
+  val exec_dma : state -> int -> state
 end
 
-module MakeOAM (M : State.S) : S = struct
-  module State = M
+module MakeOAM (State : State.S) : (S with type state = State.t) = struct
+  type state = State.t
 
-  let exec_dma (st : State.t) mc =
-    let rec aux (st : State.t) (DMAState.OAM.State.Active {src;progress}) n =
+  let exec_dma (st : state) mc =
+    let rec aux (st : state) (DMAState.OAM.State.Active {src;progress}) n =
       match progress, n with
       | 160, _ -> { st with dma_oam = DMAState.OAM.set_state st.dma_oam Inactive }
       | m, 0   -> { st with dma_oam = DMAState.OAM.set_state st.dma_oam @@ Active {src; progress} }
@@ -22,9 +22,9 @@ end
 
 (* move dma and hdma here *)
 
-module MakeVRAM (M : State.S) : S = struct
-  module State = M
+module MakeVRAM (State : State.S) : (S with type state = State.t) = struct
+  type state = State.t
 
-  let exec_dma (st : State.t) mc = st
+  let exec_dma (st : state) mc = st
 
 end

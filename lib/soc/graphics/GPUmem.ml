@@ -79,7 +79,7 @@ module Palettes_CGB : Palettes_intf = struct
       (* DMG registers *)
       bgp : int; obp0 : int; obp1 : int;
       (* CGB registers + palette memory *)
-      bcps: int; bcpd : int; ocps: int; ocpd: int;
+      bcps: int; (* bcpd : int; *) ocps: int; (* ocpd: int; *)
       obj_cram : int list; (* length 64 *)
       bgw_cram : int list; (* length 64 *)
     }
@@ -87,7 +87,7 @@ module Palettes_CGB : Palettes_intf = struct
   let initial =
     {
       bgp = 0; obp0 = 0; obp1 = 0;
-      bcps = 0; bcpd = 0; ocps = 0; ocpd = 0;
+      bcps = 0; ocps = 0;
       obj_cram = List.init 64  (fun _ -> 0);
       bgw_cram = List.init 64  (fun _ -> 0)
     }
@@ -98,9 +98,9 @@ module Palettes_CGB : Palettes_intf = struct
     | 0xFF48 -> m.obp0
     | 0xFF49 -> m.obp1
     | 0xFF68 -> m.bcps
-    | 0xFF69 -> m.bcpd
+    | 0xFF69 -> List.nth m.bgw_cram @@ m.bcps land 0x3F
     | 0xFF6A -> m.ocps
-    | 0xFF6B -> m.ocpd
+    | 0xFF6B -> List.nth m.obj_cram @@ m.ocps land 0x3F
 
   let set m i v =
     match i with
@@ -111,13 +111,14 @@ module Palettes_CGB : Palettes_intf = struct
     | 0xFF69 ->
       let addr = m.bcps land 0x3F in
       let m = if m.bcps land 0x80 > 0 then { m with bcps = m.bcps + 1 land 0x3F } else m in
-
-
-
+      let bgw_cram = List.mapi (fun i ei -> if i = addr then v else ei) m.bgw_cram in
+      { m with bgw_cram }
     | 0xFF6A -> { m with ocps = v }
-    | 0xFF6B -> { m with ocpd = v }
-
-
+    | 0xFF6B ->
+      let addr = m.ocps land 0x3F in
+      let m = if m.ocps land 0x80 > 0 then { m with ocps = m.ocps + 1 land 0x3F } else m in
+      let obj_cram = List.mapi (fun i ei -> if i = addr then v else ei) m.obj_cram in
+      { m with obj_cram }
 
   let in_range i = (0xFF47 <= i && i <= 0xFF48) || (0xFF68 <= i && i <= 0xFF6B)
 end

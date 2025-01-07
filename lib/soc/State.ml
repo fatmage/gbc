@@ -190,6 +190,7 @@ module Make (M1 : ROM.S) (M2 : GPUmem.S) (M3 : RAM.S) : S = struct
         -> failwith "Bus error: address out of range."
 
     let get16 st addr =
+      if addr = 0xFF69 then get8 st addr else
       let hi, lo = get8 st addr, get8 st (addr + 1) in
       hi lsl 8 lor lo
 

@@ -108,9 +108,16 @@ module Palettes_CGB : Palettes_intf = struct
     | 0xFF48 -> { m with obp0 = v }
     | 0xFF49 -> { m with obp1 = v }
     | 0xFF68 -> { m with bcps = v }
-    | 0xFF69 -> { m with bcpd = v }
+    | 0xFF69 ->
+      let addr = m.bcps land 0x3F in
+      let m = if m.bcps land 0x80 > 0 then { m with bcps = m.bcps + 1 land 0x3F } else m in
+
+
+
     | 0xFF6A -> { m with ocps = v }
     | 0xFF6B -> { m with ocpd = v }
+
+
 
   let in_range i = (0xFF47 <= i && i <= 0xFF48) || (0xFF68 <= i && i <= 0xFF6B)
 end

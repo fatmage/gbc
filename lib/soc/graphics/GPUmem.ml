@@ -9,7 +9,6 @@ end
 module type S = sig
 
   module OAM : sig
-
     type object_data = { y_p : int; x_p : int; t_index : int; flags : int }
     type t = object_data list
     val initial : t
@@ -23,6 +22,7 @@ module type S = sig
     val get_tile_index : t -> int -> int -> int -> int
     val get_tile_attributes : t -> int -> int -> int -> int
     val get_tile_data_row : t -> int -> int -> int -> int -> int * int
+    val get_obj_tile_data_row : t -> int -> int -> int -> int -> int * int
   end
   module LCD_Regs : sig
 
@@ -73,8 +73,10 @@ module type S = sig
   val reset_ly : t -> t
   val get_ly : t -> int
 
-  val update_mode : t -> GPUmode.t -> t
+  type scanned_obj = { x_p : int; p1 : int; p2 : int; palette : int; prio : bool }
+  val scan_oam : t -> int -> scanned_obj list
 
+  val update_mode : t -> GPUmode.t -> t
   val change_mode : t -> GPUmode.t -> t
 
 end
@@ -189,7 +191,7 @@ module Make (M : Palettes_intf) : S = struct
         | _, 10 -> acc
         | { y_p; x_p; t_index; flags } :: xs, cnt ->
           let acc, cnt =
-          if y_p <= ly && ly <= y_p + size then
+          if y_p <= ly && ly <= y_p + size - 1 then
             ({y_p; x_p; t_index; flags} :: acc), (cnt + 1) else acc, cnt
           in
           aux acc xs cnt
@@ -233,10 +235,25 @@ module Make (M : Palettes_intf) : S = struct
         | 1, 0 -> b2
         | 1, 1 -> b1 in
       match area with
-      | 0x8000 -> (Bank.get bank (index * 16 + row * 2)), (Bank.get bank (index * 16 + row * 2 + 1))
+      | 0x8000 -> (Bank.get bank (0x8000 + index * 16 + row * 2)), (Bank.get bank (0x8000 + index * 16 + row * 2 + 1))
       | 0x9000 ->
         let s_index = (index land 0x7F) - (index land 0x80) in
-        (Bank.get bank (s_index * 16)), (Bank.get bank (index * 16 + 1))
+        (Bank.get bank (0x9000 + s_index * 16 + row * 2)), (Bank.get bank (0x9000 + s_index * 16 + row * 2 + 1))
+
+    let get_obj_tile_data_row (b1, b2, b) index size row chosen_bank =
+      let bank =
+        match b, chosen_bank with
+        | 0, 0 -> b1
+        | 0, 1 -> b2
+        | 1, 0 -> b2
+        | 1, 1 -> b1
+      in
+      let index =
+        match size with
+        | 8  -> index
+        | 16 -> index land 0xFE
+      in
+      Bank.get bank (0x8000 + index * 16 + row * 2),  Bank.get bank (0x8000 + index * 16 + row * 2 + 1)
 
     let in_range i = Bank.in_range i || i = 0xFF4F
 
@@ -331,6 +348,26 @@ module Make (M : Palettes_intf) : S = struct
 
   let reset_ly m = { m with lcd_regs = { m.lcd_regs with ly = 0 } }
   let get_ly m = m.lcd_regs.ly
+
+  type scanned_obj = {x_p : int; p1 : int; p2 : int; palette : int; prio : bool }
+
+  let scan_oam m ly =
+    let size = LCD_Regs.obj_size m.lcd_regs in
+    let objs = OAM.scan_oam m.oam ly size in
+    (* type object_data = { y_p : int; x_p : int; t_index : int; flags : int } *)
+    let scan_object_data ({ y_p; x_p; t_index; flags} : OAM.object_data) =
+      let prio = flags land 0x80 > 0 in
+      let y_flip = flags land 0x40 > 0 in
+      let x_flip = flags land 0x20 > 0 in
+      let bank = flags land 0x08 lsr 3 in
+      let palette = flags land 0x07 in
+      let row = if y_flip then size - (ly - y_p) else ly - y_p in
+      let p1, p2 = VRAM.get_obj_tile_data_row m.vram t_index size row bank in
+      let p1, p2 = if x_flip then Intops.rev_u8 p1, Intops.rev_u8 p2 else p1, p2 in
+      { x_p; p1; p2; palette; prio }
+    in
+    List.map scan_object_data objs
+
 
 
   let update_mode m mode = { m with mode }

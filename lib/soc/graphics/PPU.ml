@@ -41,18 +41,13 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let obj_buffer = Array.make screen_w empty_pixel
 
 
-  type t = { sprite_buffer : int list }
+  type t = { sprite_buffer : State.GPUmem.scanned_obj list }
   let initial = { sprite_buffer = [] }
 
   let dot_of_mc mcycles speed =
     if speed then mcycles * 4 else mcycles * 2
 
-  let rev_u8 u8 =
-    let rec loop acc u8 =
-      function
-      | 0 -> acc
-      | n -> loop ((acc lsl 1) lor (u8 land 1)) (u8 lsr 1) (n-1) in
-      loop 0 u8 8
+
 
   let render_bgw_line (st : state) ppu ly =
     let render_bg_line (st : state) ly tile_data_area =
@@ -73,8 +68,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
         let palette = tile_attr land 0x07 in
         let row_in_tile = if y_flip then 8 - row_in_tile else row_in_tile in
         let p1, p2 = State.GPUmem.VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_index row_in_tile bank in
-        let p1 = if x_flip then ref (rev_u8 p1) else ref p1 in
-        let p2 = if x_flip then ref (rev_u8 p2) else ref p2 in
+        let p1 = if x_flip then ref (Intops.rev_u8 p1) else ref p1 in
+        let p2 = if x_flip then ref (Intops.rev_u8 p2) else ref p2 in
         let len =
           if col_in_tile > 0 then
             8 - col_in_tile
@@ -111,8 +106,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           let palette = tile_attr land 0x07 in
           let row_in_tile = if y_flip then 8 - row_in_tile else row_in_tile in
           let p1, p2 = State.GPUmem.VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_index row_in_tile bank in
-          let p1 = if x_flip then ref (rev_u8 p1) else ref p1 in
-          let p2 = if x_flip then ref (rev_u8 p2) else ref p2 in
+          let p1 = if x_flip then ref (Intops.rev_u8 p1) else ref p1 in
+          let p2 = if x_flip then ref (Intops.rev_u8 p2) else ref p2 in
           let len = if screen_w - !lx < 8 then screen_w - !lx else 8 in
           for i = 0 to len - 1 do
             let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
@@ -129,7 +124,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       render_w_line st ly tile_data_area
 
   (* MAYBE TODO - actual oam scan *)
-  let scan_oam (st : state) ppu = ppu
+  let scan_oam (st : state) ppu = { ppu with sprite_buffer = State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly }
 
   (* TODO render_obj_line *)
   let render_obj_line st ppu ly = ()

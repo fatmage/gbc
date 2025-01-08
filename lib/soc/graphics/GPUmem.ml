@@ -9,7 +9,14 @@ end
 module type S = sig
 
   module OAM : sig
-  include Addressable.S
+
+    type object_data = { y_p : int; x_p : int; t_index : int; flags : int }
+    type t = object_data list
+    val initial : t
+    val get : t -> int -> int
+    val set : t -> int -> int -> t
+    val scan_oam : t -> int -> int -> t
+    val in_range : int -> bool
   end
   module VRAM : sig
     include RAM.S
@@ -138,7 +145,7 @@ module Make (M : Palettes_intf) : S = struct
 
   module Palettes = M
 
-  (* TODO *)
+  (* TODO - maybe optimise *)
   module OAM = struct
 
     type object_data = { y_p : int; x_p : int; t_index : int; flags : int }
@@ -173,6 +180,21 @@ module Make (M : Palettes_intf) : S = struct
         | x::xs, i -> aux xs (i - 1) v (x::acc)
       in
       aux xs obj_i v []
+
+
+    let scan_oam m ly size =
+      let rec aux acc xs cnt =
+        match xs, cnt with
+        | [], _ -> acc
+        | _, 10 -> acc
+        | { y_p; x_p; t_index; flags } :: xs, cnt ->
+          let acc, cnt =
+          if y_p <= ly && ly <= y_p + size then
+            ({y_p; x_p; t_index; flags} :: acc), (cnt + 1) else acc, cnt
+          in
+          aux acc xs cnt
+      in
+      aux [] m 0
 
     let in_range i = i >= 0xFE00 && i <= 0xFE9F
   end

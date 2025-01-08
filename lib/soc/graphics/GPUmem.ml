@@ -1,7 +1,8 @@
 module type Palettes_intf = sig
   include Addressable.S
 
-  (* val lookup_bg : t -> *)
+  val lookup_bgw : t -> int -> int -> int
+  val lookup_obj : t -> int -> int -> int
 end
 
 
@@ -14,7 +15,7 @@ module type S = sig
     include RAM.S
     val get_tile_index : t -> int -> int -> int -> int
     val get_tile_attributes : t -> int -> int -> int -> int
-    val get_tile_data_row : t -> int -> int -> int -> int * int
+    val get_tile_data_row : t -> int -> int -> int -> int -> int * int
   end
   module LCD_Regs : sig
 
@@ -120,6 +121,14 @@ module Palettes_CGB : Palettes_intf = struct
       let obj_cram = List.mapi (fun i ei -> if i = addr then v else ei) m.obj_cram in
       { m with obj_cram }
 
+  let rec nth_2 xs i =
+    match xs,i with
+    | l::h::xs, 0 -> l lsl 8 lor h
+    | x::xs, i -> nth_2 xs (i-1)
+  let lookup_bgw m palette color = nth_2 m.bgw_cram (palette * 8 + (color * 2))
+
+  let lookup_obj m palette color = nth_2 m.bgw_cram (palette * 8 + (color * 2))
+
   let in_range i = (0xFF47 <= i && i <= 0xFF48) || (0xFF68 <= i && i <= 0xFF6B)
 end
 
@@ -194,12 +203,18 @@ module Make (M : Palettes_intf) : S = struct
       let bank1 = if bank = 0 then b2 else b1 in
       Bank.get bank1 (area + ((y/8) * 32) + (x/8))
 
-    let get_tile_data_row m area index row =
+    let get_tile_data_row (b1, b2, b) area index row chosen_bank =
+      let bank =
+        match b, chosen_bank with
+        | 0, 0 -> b1
+        | 0, 1 -> b2
+        | 1, 0 -> b2
+        | 1, 1 -> b1 in
       match area with
-      | 0x8000 -> (get m (index * 16 + row * 2)), (get m (index * 16 + row * 2 + 1))
+      | 0x8000 -> (Bank.get bank (index * 16 + row * 2)), (Bank.get bank (index * 16 + row * 2 + 1))
       | 0x9000 ->
         let s_index = (index land 0x7F) - (index land 0x80) in
-        (get m (s_index * 16)), (get m (index * 16 + 1))
+        (Bank.get bank (s_index * 16)), (Bank.get bank (index * 16 + 1))
 
     let in_range i = Bank.in_range i || i = 0xFF4F
 

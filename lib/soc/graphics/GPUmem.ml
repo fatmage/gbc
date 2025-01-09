@@ -197,13 +197,13 @@ module Make (M : Palettes_intf) : S = struct
       aux xs obj_i v []
 
 
-    (* TODO fix maths of out of bounds objects *)
     let scan_oam m ly size =
       let rec aux acc xs cnt =
         match xs, cnt with
         | [], _ -> acc
         | _, 10 -> acc
         | { y_p; x_p; t_index; flags } :: xs, cnt ->
+          let y_p = y_p - 16 in
           let acc, cnt =
           if y_p <= ly && ly <= y_p + size - 1 then
             ({y_p; x_p; t_index; flags} :: acc), (cnt + 1) else acc, cnt

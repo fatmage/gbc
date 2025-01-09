@@ -3,8 +3,6 @@
 
 ## Roadmap:
 
- - finish ppu
-
  - implement cartridge header reading
 
  - intialisation - read cartridge header, check which mbc, set rom and

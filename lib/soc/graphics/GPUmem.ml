@@ -197,6 +197,7 @@ module Make (M : Palettes_intf) : S = struct
       aux xs obj_i v []
 
 
+    (* TODO fix maths of out of bounds objects *)
     let scan_oam m ly size =
       let rec aux acc xs cnt =
         match xs, cnt with
@@ -367,7 +368,6 @@ module Make (M : Palettes_intf) : S = struct
   let scan_oam m ly =
     let size = LCD_Regs.obj_size m.lcd_regs in
     let objs = OAM.scan_oam m.oam ly size in
-    (* type object_data = { y_p : int; x_p : int; t_index : int; flags : int } *)
     let scan_object_data ({ y_p; x_p; t_index; flags} : OAM.object_data) =
       let prio = flags land 0x80 > 0 in
       let y_flip = flags land 0x40 > 0 in

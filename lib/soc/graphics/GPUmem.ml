@@ -3,6 +3,12 @@ module type Palettes_intf = sig
 
   val lookup_bgw : t -> int -> int -> int
   val lookup_obj : t -> int -> int -> int
+
+  val bgw_array : t -> int array
+  val obj_array : t -> int array
+
+  val lookup_arr : int array -> int -> int -> int
+
 end
 
 
@@ -137,6 +143,13 @@ module Palettes_CGB : Palettes_intf = struct
   let lookup_bgw m palette color = nth_2 m.bgw_cram (palette * 8 + (color * 2))
 
   let lookup_obj m palette color = nth_2 m.bgw_cram (palette * 8 + (color * 2))
+
+  let bgw_array m = Array.of_list m.bgw_cram
+  let obj_array m = Array.of_list m.obj_cram
+  let lookup_arr arr palette color =
+    let l = arr.(palette * 8 + (color * 2)) in
+    let h = arr.(palette * 8 + (color * 2) + 1) in
+    l lsl 8 lor h
 
   let in_range i = (0xFF47 <= i && i <= 0xFF48) || (0xFF68 <= i && i <= 0xFF6B)
 end

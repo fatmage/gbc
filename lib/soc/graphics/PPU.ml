@@ -3,7 +3,7 @@ module type S = sig
   type state
 
   type t
-  type pixel = { color: int; palette : int; sprite_prio : int; bg_prio : bool }
+  type pixel = { color: int; palette : int; sprite_prio : int; prio : bool }
 
   val framebuffer : int array array
   val screen_w : int
@@ -30,24 +30,24 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let cgb_mode = true
 
-  type pixel = { color: int; palette : int; sprite_prio : int; bg_prio : bool }
-  let empty_pixel = { color = 0; palette = 0; sprite_prio = 0; bg_prio = false }
+  type pixel = { color: int; palette : int; sprite_prio : int; prio : bool }
+  let empty_pixel = { color = -1; palette = 0; sprite_prio = 0; prio = false }
 
-  let mk_pixel color palette sprite_prio bg_prio = {color; palette; sprite_prio; bg_prio }
+  let mk_pixel color palette sprite_prio prio = {color; palette; sprite_prio; prio }
 
 
   let framebuffer = Array.make_matrix screen_w screen_h 0
   let bgw_buffer = Array.make screen_w empty_pixel
   let obj_buffer = Array.make screen_w empty_pixel
 
-
-  type t = { sprite_buffer : State.GPUmem.scanned_obj list }
+  type obj_data = State.GPUmem.scanned_obj
+  type t = { sprite_buffer : obj_data list }
   let initial = { sprite_buffer = [] }
+
+  let reset_sprite_buffer ppu = { ppu with sprite_buffer = [] }
 
   let dot_of_mc mcycles speed =
     if speed then mcycles * 4 else mcycles * 2
-
-
 
   let render_bgw_line (st : state) ppu ly =
     let render_bg_line (st : state) ly tile_data_area =
@@ -123,19 +123,62 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     if State.GPUmem.LCD_Regs.window_enabled st.gpu_mem.lcd_regs then
       render_w_line st ly tile_data_area
 
-  (* MAYBE TODO - actual oam scan *)
+
+
+
   let scan_oam (st : state) ppu = { ppu with sprite_buffer = State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly }
 
   (* TODO render_obj_line *)
-  let render_obj_line st ppu ly = ()
+  (* We have all objects in ppu.sprite_buffer, we need to iter through the list
+     and write every obj to pixel_buffer like in obj and window *)
+  let render_obj_line (st : state) ppu ly =
+    let draw_obj obj_prio ({ x_p; p1; p2 ; palette; prio } : obj_data) =
+      let lx = ref (x_p - 8) in
+      let p1 = ref p1 in
+      let p2 = ref p2 in
+      for _ = 0 to 7 do
+        begin
+        if !lx >= 0 && !lx < 160 then
+          let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
+          obj_buffer.(!lx) <- (mk_pixel color palette obj_prio prio)
+        end;
+        p1 := !p1 lsr 1;
+        p2 := !p2 lsr 1;
+      done
+    in
+    List.iteri draw_obj ppu.sprite_buffer
+
+  let push_pixel x y arr palette color =
+    framebuffer.(x).(y) <- State.GPUmem.Palettes.lookup_arr arr palette color
 
   let render_line (st : state) ppu =
+    let bgw_palette = State.GPUmem.Palettes.bgw_array st.gpu_mem.palettes in
+    let obj_palette = State.GPUmem.Palettes.obj_array st.gpu_mem.palettes in
     let ly = st.gpu_mem.lcd_regs.ly in
     render_bgw_line st ppu ly;
+    begin
     if State.GPUmem.LCD_Regs.obj_enabled st.gpu_mem.lcd_regs then
-      render_obj_line st ppu ly;
-    (* TODO: mix bgw and obj linebuffer to framebuffer *)
-    ()
+      render_obj_line st ppu ly
+    end;
+    for i = 0 to 159 do
+      match bgw_buffer.(i), obj_buffer.(i), State.GPUmem.LCD_Regs.bgwindow_ep st.gpu_mem.lcd_regs with
+      (* No object pixel *)
+      | { color; palette; _}, {color = -1; _}, _ ->
+        push_pixel i ly bgw_palette palette color
+      (* Transparent object *)
+      | { color; palette; _}, {color = 0; _}, _ ->
+        push_pixel i ly bgw_palette palette color
+      | _, {palette; color; _}, false
+      | {prio = false; _}, {palette; color; prio = false; _}, true ->
+        push_pixel i ly obj_palette palette color
+      | {color = 0; _}, {palette; color; _}, true ->
+        push_pixel i ly obj_palette palette color
+      | {palette; color; _}, _, true ->
+        push_pixel i ly bgw_palette palette color
+    done;
+    reset_sprite_buffer ppu
+
+
 
 
   let check_ly_lyc (st : state) =
@@ -181,7 +224,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     | GPUmode.Drawing_pixels (c, m) ->
       let new_c = c + dots in
       if new_c >= m then
-        let _ = render_line st ppu in
+        let ppu = render_line st ppu in
         let st = if State.GPUmem.LCD_Regs.mode0_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
         State.change_mode st @@ HBlank (new_c, 204), ppu
       else

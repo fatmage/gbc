@@ -8,15 +8,14 @@ end
 let make_rom (placeholder : bool) : (module S) = (
 module struct
 
-  type t = Bytes.t
+type t = Bytes.t
+let initial = Bytes.create 8192
 
-  let initial = Bytes.create 8192
+let get m i = int_of_char (Bytes.get m i)
 
-  let get t i = int_of_char (Bytes.get t i)
+let set m i v = m
 
-  let set t i c = Bytes.set t i (char_of_int c); t
-
-  let in_range n = if (n < 0 && n >= 8192) then true else false
+let in_range n = n >= 0 && n < 8192
 end)
 
 module Default = struct

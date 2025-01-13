@@ -102,7 +102,7 @@ module Palettes_CGB : Palettes_intf = struct
 
   let initial =
     {
-      bgp = 0; obp0 = 0; obp1 = 0;
+      bgp = 0xFC; obp0 = 0; obp1 = 0;
       bcps = 0; ocps = 0;
       obj_cram = List.init 64  (fun _ -> 0);
       bgw_cram = List.init 64  (fun _ -> 0)
@@ -220,30 +220,30 @@ module Make (M : Palettes_intf) : S = struct
 
     type t = Bank.t * Bank.t * int
 
-    let initial = Bank.initial, Bank.initial, 0
+    let initial = Bank.initial, Bank.initial, 0xFE
 
     let get m i =
       match m, i with
-      | (_,_,bank), 0xFF4F -> bank lor 0b11111110
+      | (_,_,bank), 0xFF4F -> bank
       | (m,_,_), i         -> Bank.get m i
 
     let set m i v =
       match m, i with
       | (b1, b2, bank), 0xFF4F ->
-        if v land 1 = bank then m else (b2, b1, v land 1)
+        if v land 1 = (bank land 0b1) then (b1, b2, v) else (b2, b1, v )
       | (b1 ,b2, bank), i -> (Bank.set b1 i v, b2, bank)
 
     let get_tile_index (b1, b2, bank) area y x =
-      let bank0 = if bank = 0 then b1 else b2 in
+      let bank0 = if (bank land 0b1) = 0 then b1 else b2 in
       Bank.get bank0 (area + ((y/8) * 32) + (x/8))
 
     let get_tile_attributes (b1, b2, bank) area y x =
-      let bank1 = if bank = 0 then b2 else b1 in
+      let bank1 = if (bank land 0b1) = 0 then b2 else b1 in
       Bank.get bank1 (area + ((y/8) * 32) + (x/8))
 
     let get_tile_data_row (b1, b2, b) area index row chosen_bank =
       let bank =
-        match b, chosen_bank with
+        match (b land 0b1), chosen_bank with
         | 0, 0 -> b1
         | 0, 1 -> b2
         | 1, 0 -> b2
@@ -256,7 +256,7 @@ module Make (M : Palettes_intf) : S = struct
 
     let get_obj_tile_data_row (b1, b2, b) index size row chosen_bank =
       let bank =
-        match b, chosen_bank with
+        match (b land 0b1), chosen_bank with
         | 0, 0 -> b1
         | 0, 1 -> b2
         | 1, 0 -> b2
@@ -281,8 +281,8 @@ module Make (M : Palettes_intf) : S = struct
       }
 
     let initial =
-      { lcdc = 0; ly = 0; lyc = 0; dma = 0;
-        stat = 0; scy = 0; scx = 0; wy = 0; wx = 0 }
+      { lcdc = 0x91; ly = 0x91; lyc = 0; dma = 0x00;
+        stat = 0x81; scy = 0; scx = 0; wy = 0; wx = 0 }
 
     let get m =
       function
@@ -391,3 +391,6 @@ module Make (M : Palettes_intf) : S = struct
     | GPUmode.OAM_scan _           -> { m with mode; lcd_regs = LCD_Regs.set_mode m.lcd_regs 2 }
     | GPUmode.Drawing_pixels (_,_) -> { m with mode; lcd_regs = LCD_Regs.set_mode m.lcd_regs 3 }
 end
+
+(* module DMG_memory = Make(Palettes_DMG) *)
+module CGB_memory = Make(Palettes_CGB)

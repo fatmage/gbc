@@ -6,14 +6,14 @@ module type S = sig
   type interrupts = Disabled | Enabling | Enabled
   type cpu_activity = Running | Halted | Stopped of int
 
-  module ROM : ROM.S
+  module Cartridge : Cartridge.S
   module GPUmem : GPUmem.S
-  module Ext_RAM : RAM.S
 
   type t =
   {
+    cartridge : Cartridge.t; (* ROM + external RAM *)
     regs: Regs.regfile; flags : Regs.flags;
-    rom: ROM.t; ext_ram : Ext_RAM.t; wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
+    wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
     hram : RAM.HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
@@ -63,24 +63,27 @@ module type S = sig
   val get_ly : t -> int
   val update_mode : t -> GPUmode.t -> t
   val change_mode : t -> GPUmode.t -> t
+  val load_rom : t -> bytes -> t
+  val init_dmg : t -> t
+  val init_cgb : t -> t
 end
 
 
 
 
-module Make (M1 : ROM.S) (M2 : GPUmem.S) (M3 : RAM.S) : S = struct
+module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   type interrupts = Disabled | Enabling | Enabled
 
   type cpu_activity = Running | Halted | Stopped of int
 
-  module ROM = M1
+  module Cartridge = M1
   module GPUmem = M2
-  module Ext_RAM = M3
 
   type t =
   {
+    cartridge : Cartridge.t; (* ROM + external RAM *)
     regs: Regs.regfile; flags : Regs.flags;
-    rom: ROM.t; ext_ram : Ext_RAM.t; wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
+    wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
     hram : RAM.HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
@@ -106,12 +109,11 @@ module Make (M1 : ROM.S) (M2 : GPUmem.S) (M3 : RAM.S) : S = struct
 
     let get8 st addr =
       match addr with
-      | _ when ROM.in_range addr (* ROM *)
-        -> ROM.get st.rom addr
+      | _ when Cartridge.in_range addr (* ROM + external RAM *)
+        -> Cartridge.get st.cartridge addr
       | _ when GPUmem.in_range addr (* VRAM, OAM, LCD control, palettes *)
         -> GPUmem.get st.gpu_mem addr
-      | _ when Ext_RAM.in_range addr (* External RAM *)
-        -> Ext_RAM.get st.ext_ram addr
+      (* External RAM *)
       | _ when RAM.WRAM.in_range addr (* WRAM *)
         -> RAM.WRAM.get st.wram addr
       (* ECHO RAM *)
@@ -149,12 +151,11 @@ module Make (M1 : ROM.S) (M2 : GPUmem.S) (M3 : RAM.S) : S = struct
 
     let set8 st addr v =
       match addr with
-      | _ when ROM.in_range addr (* ROM *)
-        -> { st with rom = ROM.set st.rom addr v }
+      | _ when Cartridge.in_range addr (* ROM + external cartridge *)
+        -> { st with cartridge = Cartridge.set st.cartridge addr v }
       | _ when GPUmem.VRAM.in_range addr (* VRAM, OAM, LCD control, palettes *)
         -> { st with gpu_mem = GPUmem.set st.gpu_mem addr v }
-      | _ when Ext_RAM.in_range addr (* External RAM *)
-        -> { st with ext_ram = Ext_RAM.set st.ext_ram addr v }
+      (* External RAM *)
       | _ when RAM.WRAM.in_range addr (* WRAM *)
         -> { st with wram = RAM.WRAM.set st.wram addr v }
       (* ECHO RAM *)
@@ -202,8 +203,8 @@ module Make (M1 : ROM.S) (M2 : GPUmem.S) (M3 : RAM.S) : S = struct
 
   let initial =
     {
-      regs = Regs.initial_regfile; flags = Regs.initial_flags;
-      rom = ROM.initial; ext_ram = Ext_RAM.initial; wram = RAM.WRAM.initial;
+      cartridge = Cartridge.initial; regs = Regs.initial_regfile;
+      flags = Regs.initial_flags; wram = RAM.WRAM.initial;
       gpu_mem = GPUmem.initial; hram = RAM.HRAM.initial; joypad = Joypad.initial;
       serial = Serial.initial; timer = Timer.initial; iflag = Interrupts.initial;
       audio = Audio.initial; wave = WavePattern.initial;
@@ -261,4 +262,20 @@ module Make (M1 : ROM.S) (M2 : GPUmem.S) (M3 : RAM.S) : S = struct
   let update_mode st mode = { st with gpu_mem = GPUmem.update_mode st.gpu_mem mode }
   let change_mode st mode = { st with gpu_mem = GPUmem.change_mode st.gpu_mem mode }
 
+  let load_rom st rom = { st with cartridge = Cartridge.load_rom st.cartridge rom }
+
+  let init_dmg st = st
+
+  let init_cgb st =
+    {
+      st with
+      regs = Regs.initial_regfile_cgb;
+      flags = Regs.initial_flags; wram = RAM.WRAM.initial;
+      gpu_mem = GPUmem.initial; hram = RAM.HRAM.initial; joypad = Joypad.initial;
+      serial = Serial.initial; timer = Timer.initial; iflag = Interrupts.initial;
+      audio = Audio.initial; wave = WavePattern.initial;
+      ie = IE.initial; ime = Disabled; activity = Running;
+      dma_oam = DMAState.OAM.initial; dma_vram = DMAState.VRAM.initial;
+      cgb_mode = true
+    }
 end

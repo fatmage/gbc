@@ -17,7 +17,7 @@ module Joypad = struct
   type t = int
   let initial = 0
   let get m _ = m
-  let set _ _ v = v
+  let set m _ v = m land 0x0F lor (v land 0xF0)
   let in_range v = v = 0xFF00
 end
 

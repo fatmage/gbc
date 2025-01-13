@@ -3,7 +3,7 @@
 
 ## Roadmap:
 
- - implement cartridge header reading
+ - TODO: implement KEY1 register, look through cgb_mode, speed etc fields in state
 
  - intialisation - read cartridge header, check which mbc, set rom and
    ram in State to the corresponding mbc one nad then read the code to rom

@@ -16,7 +16,7 @@ type flags = {
 }
 
 let initial_flags = {
-  z = false; n = false; h = false; c = false
+  z = true; n = false; h = false; c = false
 }
 
 let initial_regfile = {
@@ -25,6 +25,9 @@ let initial_regfile = {
   _AF = 0; _BC = 0; _DE = 0; _HL= 0;
   _SP = 0; _PC = 0
 }
+
+
+
 
 let set_r8 rf r v =
   match r with
@@ -77,3 +80,9 @@ let set_flag fs f v =
   | Flag_n -> { fs with n = v }
   | Flag_h -> { fs with h = v }
   | Flag_c -> { fs with c = v }
+
+let initial_regfile_cgb =
+  let aux8 r v rf = set_r8 rf r v in
+  let aux16 r v rf = set_r16 rf r v in
+  initial_regfile |> (aux8 A 0x11) |> (aux8 D 0xFF) |> (aux8 E 0x56) |>
+  (aux8 L 0x0D) |> (aux16 PC 0x100) |> (aux16 SP 0xFFFE)

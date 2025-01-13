@@ -1,14 +1,14 @@
 module type S = sig
   include Addressable.S
 
-  (* val load_rom : t -> bytes -> t *)
+  val load_rom : t -> bytes -> t
 
 end
 
 
 type mbc =
-  | No_MBC
-  | MBC0
+  | ROM_ONLY
+  | ROM_RAM
   | MBC1
   | MBC2
   | MBC3
@@ -33,6 +33,7 @@ struct
       0xFF
   let set m i v = m
 
+  let load_rom m rom = rom
   let in_range i = in_rom i || in_ram i
 end
 
@@ -57,8 +58,9 @@ struct
     else
       (rom, Bank.set ram i v)
 
-  let in_range i = in_rom i || in_ram i
+  let load_rom (_,ram) rom = rom,ram
 
+  let in_range i = in_rom i || in_ram i
 end
 
 
@@ -142,9 +144,9 @@ let mbc1 rom_banks ram_banks : (module S) = (module struct
       { m with ram = RAM.set m.ram (ram_addr m i) v }
     | _ -> m
 
+  let load_rom m rom = { m with rom }
 
   let in_range i = in_rom i && in_ram i
-
 end)
 
 let mbc2 rom_banks : (module S) = (module struct
@@ -184,6 +186,7 @@ module RAM = (val RAM.make_chunk 512 0xA000)
       { m with ram = RAM.set m.ram (0xA000 + (i land 0x1F)) (v land 0b1111) }
     | _ -> m
 
+  let load_rom m rom = { m with rom }
 
   let in_range i = in_rom i && in_ram i
 end)
@@ -242,10 +245,7 @@ let mbc5 rom_banks ram_banks : (module S) = (module struct
     | _ when in_ram i ->
       { m with ram = RAM.set m.ram (addr_ram m i) v }
 
+  let load_rom m rom = { m with rom }
+
   let in_range i = true
-
-
-
-
-
 end)

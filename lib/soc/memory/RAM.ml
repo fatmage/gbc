@@ -85,7 +85,7 @@ module WRAM = struct
   type t = { b0: Bank0.t; bs: Banks.t list; svbk : int }
 
   let initial =
-    { b0 = Bank0.initial; bs = List.init 7 (fun _ -> Banks.initial); svbk = 0 }
+    { b0 = Bank0.initial; bs = List.init 7 (fun _ -> Banks.initial); svbk = 0xF8 }
 
   let get m i =
     match m,i with

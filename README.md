@@ -3,7 +3,7 @@
 
 ## Roadmap:
 
- - TODO: implement KEY1 register, look through cgb_mode, speed etc fields in state
+ - TODO: implement KEY1 register, look through unused fields in state
 
  - intialisation - read cartridge header, check which mbc, set rom and
    ram in State to the corresponding mbc one nad then read the code to rom
@@ -12,9 +12,7 @@
 
  - check if it works at all
 
- - implement DMG and CGB compatible versions of modules
-
- - implement various cartridges
+ - implement DMG compatible versions of modules
 
  - implement VRAM DMA
 

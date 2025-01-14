@@ -15,7 +15,7 @@
 
 module Joypad = struct
   type t = int
-  let initial = 0
+  let initial = 0xCF
   let get m _ = m
   let set m _ v = m land 0x0F lor (v land 0xF0)
   let in_range v = v = 0xFF00
@@ -23,16 +23,19 @@ end
 
 (* TODO *)
 module Serial = struct
-  type t = int
-  let initial = 0
-  let get m _ = m
-  let set _ _ v = v
+  type t = { sb : int; sc : int }
+  let initial = { sb = 0; sc = 0x7F }
+  let get m i =
+    match i with
+    | 0xFF01 -> m.sb
+    | 0xFF02 -> m.sc
+  let set m i v = m
   let in_range v = v = 0xFF01 || v = 0xFF02
 end
 
 module Timer = struct
-  type t = { div : int; tima : int; tma : int; tac : int; speed : bool; div_c : int; tima_c : int }
-  let initial = { div = 0; tima = 0; tma = 0; tac = 0; speed = false; div_c = 0; tima_c = 0 }
+  type t = { div : int; tima : int; tma : int; tac : int; speed : bool; div_c : int; tima_c : int; key1 : int }
+  let initial = { div = 0; tima = 0; tma = 0; tac = 0xF8; speed = false; div_c = 0; tima_c = 0; key1 = 0x7E }
   let reset_div m = { m with div = 0 }
 
   let get m i =
@@ -47,6 +50,7 @@ module Timer = struct
       end
     | 0xFF06 -> m.tma
     | 0xFF07 -> m.tac
+    | 0xFF4D -> m.key1
 
   let set m i v =
     match i with
@@ -62,6 +66,7 @@ module Timer = struct
       }
     | 0xFF06 -> { m with tma  = v }
     | 0xFF07 -> { m with tac  = v }
+    | 0xFF4D -> { m with key1 = (m.key1 land 0x80) lor (v land 0x7F) }
 
   let reset_div m = { m with div = 0 }
 
@@ -78,8 +83,7 @@ module Timer = struct
   let tima_mcyc m = m.tima
   let mcyc_to_hz v double =
     if double then 1048576 / v else 2097152 / v
-  let double_speed m = m.speed
-  let switch_speed m = { m with speed = not m.speed }
+  let switch_speed m = { m with speed = not m.speed; key1 = m.key1 lxor 0x80 }
   let run_div m cycles =
     let rec aux m =
       function
@@ -107,12 +111,12 @@ module Timer = struct
       { m with tima_c = tima_c mod cpt }, interrupted
 
   let get_speed m = m.speed
-  let in_range i = 0xFF04 <= i && i <= 0xFF07
+  let in_range i = (0xFF04 <= i && i <= 0xFF07) || i = 0xFF4D
 end
 
 module Interrupts = struct
   type t = int
-  let initial = 0
+  let initial = 0xE1
   let get m _ = m
   let set _ _ v = v land 0b11111
   let request_joypad m = m lor 0b10000

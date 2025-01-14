@@ -28,7 +28,6 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let window_wh = 256
   let line_duration = 456
 
-  let cgb_mode = true
 
   type pixel = { color: int; palette : int; sprite_prio : int; prio : bool }
   let empty_pixel = { color = -1; palette = 0; sprite_prio = 0; prio = false }

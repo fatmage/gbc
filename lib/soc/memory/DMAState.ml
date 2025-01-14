@@ -31,7 +31,7 @@ module VRAM = struct
   end
 
   type t = { hdma1 : int; hdma2 : int; hdma3 : int; hdma4 : int; hdma5 : int; state : State.t }
-  let initial = { hdma1 = 0; hdma2 = 0; hdma3 = 0; hdma4 = 0; hdma5 = 0; state = State.initial }
+  let initial = { hdma1 = 0xFF; hdma2 = 0xFF; hdma3 = 0xFF; hdma4 = 0xFF; hdma5 = 0xFF; state = State.initial }
   let get m =
     function
     | 0xFF51 -> m.hdma1

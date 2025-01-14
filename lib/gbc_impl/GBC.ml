@@ -39,17 +39,13 @@ let gbc_module rom : (module CPU.S)=
     | _ -> false
   in
   let state_module : (module State.S) =
-  match cgb, mbc_type with
-  | false, _ -> failwith "DMG compatibility mode currently unsupported."
-  | _, ROM_ONLY -> (module State.Make(Cartridge.No_RAM)(GPUmem.CGB_memory))
-  | _ , ROM_RAM -> (module State.Make(Cartridge.With_RAM)(GPUmem.CGB_memory))
-  | _, MBC1     -> (module State.Make(val Cartridge.mbc1 rom_banks ram_banks)(GPUmem.CGB_memory))
-  | _, MBC2     -> (module State.Make(val Cartridge.mbc2 rom_banks)(GPUmem.CGB_memory))
-  (* | _, MBC3 -> *)
-  | _, MBC5     -> (module State.Make(val Cartridge.mbc5 rom_banks ram_banks)(GPUmem.CGB_memory))
+    match cgb, mbc_type with
+    | false, _ -> failwith "DMG compatibility mode currently unsupported."
+    | _, ROM_ONLY -> (module State.Make(Cartridge.No_RAM)(GPUmem.CGB_memory))
+    | _ , ROM_RAM -> (module State.Make(Cartridge.With_RAM)(GPUmem.CGB_memory))
+    | _, MBC1     -> (module State.Make(val Cartridge.mbc1 rom_banks ram_banks)(GPUmem.CGB_memory))
+    | _, MBC2     -> (module State.Make(val Cartridge.mbc2 rom_banks)(GPUmem.CGB_memory))
+    (* | _, MBC3 -> *)
+    | _, MBC5     -> (module State.Make(val Cartridge.mbc5 rom_banks ram_banks)(GPUmem.CGB_memory))
   in
   (module CPU.Make(val state_module))
-
-
-(* let init_gbc rom =
-  let cpu_module = gbc_module rom in  *)

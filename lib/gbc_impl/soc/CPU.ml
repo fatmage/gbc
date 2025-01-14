@@ -1,15 +1,19 @@
 
 module type S = sig
   type state
+  module State : State.S
   module PPU : PPU.S
   module Instruction : Instruction.S
 
-  val cpu_step : state-> PPU.t -> state * PPU.t
+  val cpu_step : state -> PPU.t -> state * PPU.t * float
+
+  val init_gb : bytes -> state * PPU.t
 
 end
 
 module Make (State : State.S) : (S with type state = State.t) = struct
   type state = State.t
+  module State = State
   module PPU = PPU.Make (State)
   module Instruction = Instruction.Make (State)
   module DMA_OAM = DMAUnit.MakeOAM (State)
@@ -622,8 +626,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       let st = DMA_VRAM.exec_dma st mc in
       (* ppu *)
       let st, ppu = PPU.process_ppu st ppu @@ PPU.dot_of_mc mc @@ State.get_speed st in
-      st, ppu
-      (* w "mainie" bedizemy dodawac st dma ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
+      st, ppu, State.mc_to_time st mc
+      (* w "mainie" bedizemy dodawac st ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
     | Halted ->
       (* check for interrupt *)
       let st, _, mc = poll_interrupts_halted st in
@@ -644,11 +648,17 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       let st = DMA_VRAM.exec_dma st mc in
       (* ppu  *)
       let st, ppu = PPU.process_ppu st ppu @@ PPU.dot_of_mc mc @@ State.get_speed st in
-      st, ppu
+      st, ppu, State.mc_to_time st mc
     | Stopped n ->
-      (* if n = *)
+      let mc = 4 in
 
       (* idea - do a set amount of cycles, progress dma hdma and ppu, and then after reaching x cycles change to running *)
-      st, ppu
+      st, ppu, State.mc_to_time st mc
+
+
+  let init_gb rom =
+    let initial_state = State.load_rom (State.init_cgb State.initial) rom in
+    initial_state, PPU.initial
+
 
 end

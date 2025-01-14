@@ -1,0 +1,5 @@
+(library
+ (name gbc_platform_lib)
+ (libraries gbc_impl_lib))
+
+(include_subdirs unqualified)

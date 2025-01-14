@@ -18,6 +18,7 @@ module Joypad = struct
   let initial = 0xCF
   let get m _ = m
   let set m _ v = m land 0x0F lor (v land 0xF0)
+  let set_input m v = v
   let in_range v = v = 0xFF00
 end
 
@@ -111,6 +112,8 @@ module Timer = struct
       { m with tima_c = tima_c mod cpt }, interrupted
 
   let get_speed m = m.speed
+
+  let tmul m = if m.speed then 1. /. 8388608. else 1. /. 4194304.
   let in_range i = (0xFF04 <= i && i <= 0xFF07) || i = 0xFF4D
 end
 

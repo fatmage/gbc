@@ -63,9 +63,13 @@ module type S = sig
   val get_ly : t -> int
   val update_mode : t -> GPUmode.t -> t
   val change_mode : t -> GPUmode.t -> t
+  val get_joypad : t -> int
+  val set_joypad : t -> int -> t
   val load_rom : t -> bytes -> t
   val init_dmg : t -> t
   val init_cgb : t -> t
+  val mc_to_time : t -> int -> float
+
 end
 
 
@@ -261,6 +265,9 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   let update_mode st mode = { st with gpu_mem = GPUmem.update_mode st.gpu_mem mode }
   let change_mode st mode = { st with gpu_mem = GPUmem.change_mode st.gpu_mem mode }
 
+  let get_joypad st = st.joypad
+  let set_joypad st v = { st with joypad = IOregs.Joypad.set_input st.joypad v }
+
   let load_rom st rom = { st with cartridge = Cartridge.load_rom st.cartridge rom }
 
   let init_dmg st = st
@@ -276,4 +283,6 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       ie = IE.initial; ime = Disabled; activity = Running;
       dma_oam = DMAState.OAM.initial; dma_vram = DMAState.VRAM.initial;
     }
+
+  let mc_to_time st mc = (float_of_int mc) *. (Timer.tmul st.timer)
 end

@@ -4,6 +4,8 @@ let frame_time = 1. /. 60.
 module type S = sig
   type state
   module History : History.S
+
+  val emulator_loop : state -> History.t -> float -> float -> Tsdl.Sdl.texture -> Tsdl.Sdl.renderer -> unit
 end
 
 

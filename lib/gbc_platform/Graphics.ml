@@ -23,7 +23,7 @@ let create_texture renderer =
   Sdl.Texture.access_streaming ~w:gbc_w ~h:gbc_h
   |> or_exit
 
-let render_framebuffer ~texture ~renderer ~framebuffer =
+let render_framebuffer texture renderer framebuffer =
   let copy_fb_to_pixels framebuffer pixels =
     for y = 0 to gbc_h - 1 do
       for x = 0 to gbc_w -1 do
@@ -32,7 +32,7 @@ let render_framebuffer ~texture ~renderer ~framebuffer =
       done
     done
   in
-  Sdl.lock_texture texture None Bigarray.int32 |> or_exit
+  Sdl.lock_texture texture None Bigarray.int |> or_exit
   |> (fun (pixels, _) -> pixels)
   |> copy_fb_to_pixels framebuffer;
   Sdl.unlock_texture texture;

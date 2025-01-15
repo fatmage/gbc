@@ -1,18 +1,16 @@
 
 module type S = sig
-  type state
   module State : State.S
   module PPU : PPU.S
   module Instruction : Instruction.S
 
-  val cpu_step : state -> state * float
+  val cpu_step : State.t -> State.t * float
 
-  val init_gb : bytes -> state
+  val init_gb : bytes -> State.t
 
 end
 
-module Make (State : State.S) : (S with type state = State.t) = struct
-  type state = State.t
+module Make (State : State.S) : S = struct
   module State = State
   module PPU = PPU.Make (State)
   module Instruction = Instruction.Make (State)
@@ -550,7 +548,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     | 0 -> 0
     | n -> aux n 1 1
 
-  let fetch_decode_execute (st : state) =
+  let fetch_decode_execute (st : State.t) =
     let st, instr =
       match st.ime with
       | Enabled  ->
@@ -577,7 +575,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     | st, Next, cycles ->
       { st with regs = { st.regs with _PC = st.regs._PC + cycles } }, cycles
 
-  let poll_interrupts_halted (st : state) =
+  let poll_interrupts_halted (st : State.t) =
     let st, addr, (act : State.cpu_activity) =
       match st.ime with
       | Enabled ->
@@ -605,7 +603,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     | Running, n    -> Instruction.interrupt_service_routine n st
     | Halted,  _    -> st, Halt, 1
 
-  let cpu_step (st : state) =
+  let cpu_step (st : State.t) =
     match st.activity with
     | Running ->
       (* interrupt or fetch decode execute *)

@@ -5,18 +5,19 @@ module type S = sig
   type t
   val empty : t
   val add_state : t -> state -> t
-  val get_prev : t -> state
+  val get : t -> state
   val move_back : t -> t
+  val move_back_n : t -> int -> t
 end
 
 
-module Make (State : Gbc_core.State.S) : S= struct
+module Make (State : Gbc_core.State.S) : (S with type state = State.t) = struct
   type state = State.t
   type t = state list
 
   let empty = []
   let add_state xs st = st :: xs
-  let get_prev =
+  let get =
     function
     | st :: sts -> st
     | [] -> failwith "Can't move back."
@@ -25,5 +26,9 @@ module Make (State : Gbc_core.State.S) : S= struct
     function
     | [] -> []
     | st :: xs -> xs
+
+  let rec move_back_n xs = function
+  | 0 -> xs
+  | n -> move_back_n (move_back xs) (n-1)
 
 end

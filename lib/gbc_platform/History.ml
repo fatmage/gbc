@@ -10,7 +10,7 @@ module type S = sig
 end
 
 
-module Make (State : Gbc_impl_lib.State.S) : S= struct
+module Make (State : Gbc_core.State.S) : S= struct
   type state = State.t
   type t = state list
 

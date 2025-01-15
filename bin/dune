@@ -1,4 +1,4 @@
 (executable
  (public_name gbc)
  (name main)
- (libraries gbc_impl_lib gbc_platform_lib))
+ (libraries gbc_core gbc_platform))

@@ -5,9 +5,9 @@ module type S = sig
   module PPU : PPU.S
   module Instruction : Instruction.S
 
-  val cpu_step : state -> PPU.t -> state * PPU.t * float
+  val cpu_step : state -> state * float
 
-  val init_gb : bytes -> state * PPU.t
+  val init_gb : bytes -> state
 
 end
 
@@ -605,7 +605,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     | Running, n    -> Instruction.interrupt_service_routine n st
     | Halted,  _    -> st, Halt, 1
 
-  let cpu_step (st : state) ppu =
+  let cpu_step (st : state) =
     match st.activity with
     | Running ->
       (* interrupt or fetch decode execute *)
@@ -625,8 +625,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       let st = DMA_OAM.exec_dma st mc in
       let st = DMA_VRAM.exec_dma st mc in
       (* ppu *)
-      let st, ppu = PPU.process_ppu st ppu @@ PPU.dot_of_mc mc @@ State.get_speed st in
-      st, ppu, State.mc_to_time st mc
+      let st = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
+      st, State.mc_to_time st mc
       (* w "mainie" bedizemy dodawac st ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
     | Halted ->
       (* check for interrupt *)
@@ -647,18 +647,18 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       (* hdma *)
       let st = DMA_VRAM.exec_dma st mc in
       (* ppu  *)
-      let st, ppu = PPU.process_ppu st ppu @@ PPU.dot_of_mc mc @@ State.get_speed st in
-      st, ppu, State.mc_to_time st mc
+      let st = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
+      st, State.mc_to_time st mc
     | Stopped n ->
       let mc = 4 in
 
       (* idea - do a set amount of cycles, progress dma hdma and ppu, and then after reaching x cycles change to running *)
-      st, ppu, State.mc_to_time st mc
+      st, State.mc_to_time st mc
 
 
   let init_gb rom =
     let initial_state = State.load_rom (State.init_cgb State.initial) rom in
-    initial_state, PPU.initial
+    initial_state
 
 
 end

@@ -1,8 +1,6 @@
 
 module type S = sig
   type state
-
-  type t
   type pixel = { color: int; palette : int; sprite_prio : int; prio : bool }
 
   val framebuffer : int array array
@@ -12,10 +10,9 @@ module type S = sig
   val window_wh : int
   val line_duration : int
 
-  val initial : t
   val dot_of_mc : int -> bool -> int
 
-  val process_ppu : state -> t -> int -> state * t
+  val process_ppu : state -> int -> state
 end
 
 module Make (State : State.S) : (S with type state = State.t) = struct
@@ -40,15 +37,14 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let obj_buffer = Array.make screen_w empty_pixel
 
   type obj_data = State.GPUmem.scanned_obj
-  type t = { sprite_buffer : obj_data list }
-  let initial = { sprite_buffer = [] }
+  let sprite_buffer : obj_data list ref = ref []
 
-  let reset_sprite_buffer ppu = { ppu with sprite_buffer = [] }
+  let reset_sprite_buffer () = sprite_buffer := []
 
   let dot_of_mc mcycles speed =
     if speed then mcycles * 4 else mcycles * 2
 
-  let render_bgw_line (st : state) ppu ly =
+  let render_bgw_line (st : state)  ly =
     let render_bg_line (st : state) ly tile_data_area =
       let scy, scx = st.gpu_mem.lcd_regs.scy, st.gpu_mem.lcd_regs.scx in
       let y = (scy + ly) mod bg_wh in
@@ -125,12 +121,12 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
 
 
-  let scan_oam (st : state) ppu = { ppu with sprite_buffer = State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly }
+  let scan_oam (st : state) = sprite_buffer := State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly
 
   (* TODO render_obj_line *)
-  (* We have all objects in ppu.sprite_buffer, we need to iter through the list
+  (* We have all objects in sprite_buffer, we need to iter through the list
      and write every obj to pixel_buffer like in obj and window *)
-  let render_obj_line (st : state) ppu ly =
+  let render_obj_line (st : state) ly =
     let draw_obj obj_prio ({ x_p; p1; p2 ; palette; prio } : obj_data) =
       let lx = ref (x_p - 8) in
       let p1 = ref p1 in
@@ -145,19 +141,19 @@ module Make (State : State.S) : (S with type state = State.t) = struct
         p2 := !p2 lsr 1;
       done
     in
-    List.iteri draw_obj ppu.sprite_buffer
+    List.iteri draw_obj !sprite_buffer
 
   let push_pixel x y arr palette color =
     framebuffer.(x).(y) <- State.GPUmem.Palettes.lookup_arr arr palette color
 
-  let render_line (st : state) ppu =
+  let render_line (st : state) =
     let bgw_palette = State.GPUmem.Palettes.bgw_array st.gpu_mem.palettes in
     let obj_palette = State.GPUmem.Palettes.obj_array st.gpu_mem.palettes in
     let ly = st.gpu_mem.lcd_regs.ly in
-    render_bgw_line st ppu ly;
+    render_bgw_line st ly;
     begin
     if State.GPUmem.LCD_Regs.obj_enabled st.gpu_mem.lcd_regs then
-      render_obj_line st ppu ly
+      render_obj_line st ly
     end;
     for i = 0 to 159 do
       match bgw_buffer.(i), obj_buffer.(i), State.GPUmem.LCD_Regs.bgwindow_ep st.gpu_mem.lcd_regs with
@@ -175,7 +171,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       | {palette; color; _}, _, true ->
         push_pixel i ly bgw_palette palette color
     done;
-    reset_sprite_buffer ppu
+    reset_sprite_buffer ()
 
 
 
@@ -187,7 +183,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     else
       st
 
-  let process_ppu (st : state) ppu dots =
+  let process_ppu (st : state) dots =
     match State.GPUmem.get_mode st.gpu_mem with
     | GPUmode.HBlank (c, m)         ->
       let new_c = c + dots in
@@ -195,38 +191,39 @@ module Make (State : State.S) : (S with type state = State.t) = struct
         let st = st |> State.inc_ly |> check_ly_lyc in
         if st.gpu_mem.lcd_regs.ly < screen_h then
           let st = if State.GPUmem.LCD_Regs.mode2_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
-          State.change_mode st @@ OAM_scan (new_c - m), ppu
+          State.change_mode st @@ OAM_scan (new_c - m)
         else
           let st = if State.GPUmem.LCD_Regs.mode1_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
           let st = State.request_VBlank st in
-          State.change_mode st @@ VBlank (new_c - m), ppu
+          State.change_mode st @@ VBlank (new_c - m)
       else
-        State.update_mode st @@ HBlank (new_c, m), ppu
+        State.update_mode st @@ HBlank (new_c, m)
     | GPUmode.VBlank c       ->
       let new_c = c + dots in
       if new_c >= line_duration then
         let st = st |> State.inc_ly |> check_ly_lyc in
         if State.get_ly st < screen_h + 10 then
-          State.update_mode st @@ VBlank (new_c - line_duration), ppu
+          State.update_mode st @@ VBlank (new_c - line_duration)
         else
           let st = st |> State.reset_ly |> check_ly_lyc in
           let st = if State.GPUmem.LCD_Regs.mode2_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
-          State.change_mode st @@ OAM_scan (new_c - line_duration), ppu
+          State.change_mode st @@ OAM_scan (new_c - line_duration)
       else
-        State.update_mode st @@ VBlank new_c, ppu
+        State.update_mode st @@ VBlank new_c
     | GPUmode.OAM_scan c    ->
       let new_c = c + dots in
       if new_c >= 80 then
-        State.change_mode st @@ Drawing_pixels (new_c - 80, 172), scan_oam st ppu
+        let _ = scan_oam st in
+        State.change_mode st @@ Drawing_pixels (new_c - 80, 172)
       else
-        State.update_mode st @@ OAM_scan new_c, ppu
+        State.update_mode st @@ OAM_scan new_c
     | GPUmode.Drawing_pixels (c, m) ->
       let new_c = c + dots in
       if new_c >= m then
-        let ppu = render_line st ppu in
+        let _ = render_line st in
         let st = if State.GPUmem.LCD_Regs.mode0_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
-        State.change_mode st @@ HBlank (new_c, 204), ppu
+        State.change_mode st @@ HBlank (new_c, 204)
       else
-        State.update_mode st @@ Drawing_pixels (new_c, m), ppu
+        State.update_mode st @@ Drawing_pixels (new_c, m)
 
 end

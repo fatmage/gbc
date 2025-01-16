@@ -20,3 +20,4 @@ let fail_addr msg addr = Printf.sprintf "%s Address: 0x%04X" msg addr |> failwit
 let unreachable () = failwith "Unreachable case."
 
 let print_hex v = Printf.sprintf "Value: 0x%08X" v |> print_endline
+let print_dec msg v = Printf.sprintf "%s: %d" msg v |> print_endline

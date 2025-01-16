@@ -26,12 +26,11 @@ module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
       if (delta_time > time_left) then
         let delta_time = delta_time -. time_left in
         let st, cpu_time = GBC.cpu_step st in
-        let time_left = time_left +. cpu_time in
         let joypad = GBC.State.get_joypad st in
         let st = GBC.State.set_joypad st @@ Input.set_joypad joypad in
         (* Final state in this step *)
-        let history = History.add_state history st in
-        emulator_loop st history curr_time delta_time time_left texture renderer
+        (* let history = History.add_state history st in *)
+        emulator_loop st history curr_time delta_time cpu_time texture renderer
       else
         emulator_loop st history curr_time delta_time time_left texture renderer
   and debugger_loop (st : state) (history : History.t) texture renderer =
@@ -46,13 +45,15 @@ module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
       (* TODO: implement debugger loop *)
       match !Input.dbg_input with
       | { back = true; modifier;_ } ->
+        Input.dbg_input := { !Input.dbg_input with back= false };
         let move_back hs =
-          if modifier then History.move_back hs else History.move_back_n hs 100000
+          if modifier then History.move_back_n hs 100 else History.move_back hs
         in
         let history = move_back history in
         let st = History.get history in
         debugger_loop st history texture renderer
       | { forward = true;  _ } ->
+        Input.dbg_input := { !Input.dbg_input with forward = false };
         let joypad = GBC.State.get_joypad st in
         let st = GBC.State.set_joypad st @@ Input.set_joypad joypad in
         let st, _ = GBC.cpu_step st in

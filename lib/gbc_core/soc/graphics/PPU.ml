@@ -32,7 +32,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let mk_pixel color palette sprite_prio prio = {color; palette; sprite_prio; prio }
 
 
-  let framebuffer = Array.make_matrix screen_w screen_h 0
+  let framebuffer = Array.make_matrix screen_h screen_w 0
   let bgw_buffer = Array.make screen_w empty_pixel
   let obj_buffer = Array.make screen_w empty_pixel
 
@@ -77,7 +77,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
           p1 := !p1 lsr 1;
           p2 := !p2 lsr 1;
-          bgw_buffer.(i) <- (mk_pixel color palette 0 prio)
+          (* Utils.print_dec "piszemy do bg_buffer" (!lx + i); *)
+          bgw_buffer.(!lx + i) <- (mk_pixel color palette 0 prio)
         done;
         lx := !lx + len
       done
@@ -108,7 +109,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
             let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
             p1 := !p1 lsr 1;
             p2 := !p2 lsr 1;
-            bgw_buffer.(i) <- (mk_pixel color palette 0 prio)
+            Utils.print_dec "piszemy do w_buffer" (!lx + i);
+            bgw_buffer.(!lx + i) <- (mk_pixel color palette 0 prio)
           done;
           lx := !lx + len
         done
@@ -133,7 +135,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       let p2 = ref p2 in
       for _ = 0 to 7 do
         begin
-        if !lx >= 0 && !lx < 160 then
+        if !lx >= 0 && !lx < screen_w then
           let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
           obj_buffer.(!lx) <- (mk_pixel color palette obj_prio prio)
         end;
@@ -143,33 +145,53 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     in
     List.iteri draw_obj !sprite_buffer
 
-  let push_pixel x y arr palette color =
-    framebuffer.(x).(y) <- State.GPUmem.Palettes.lookup_arr arr palette color
+  let push_pixel y x arr palette color =
+    (* print_endline "push pixel";
+    Utils.print_dec "y" y;
+    Utils.print_dec "x" x;
+    Utils.print_dec "palette" palette;
+    Utils.print_dec "color" color; *)
+    let v = State.GPUmem.Palettes.lookup_arr arr palette color in
+    (* Utils.print_dec "Pixel rgb" v; *)
+    framebuffer.(y).(x) <- v
+    (* print_endline "przeszlo" *)
+
+
+  let rec loop () = loop ()
 
   let render_line (st : state) =
     let bgw_palette = State.GPUmem.Palettes.bgw_array st.gpu_mem.palettes in
     let obj_palette = State.GPUmem.Palettes.obj_array st.gpu_mem.palettes in
     let ly = st.gpu_mem.lcd_regs.ly in
+    print_string "renderujemy line: ";
+    print_endline (string_of_int ly);
     render_bgw_line st ly;
     begin
     if State.GPUmem.LCD_Regs.obj_enabled st.gpu_mem.lcd_regs then
-      render_obj_line ()
+      (print_endline "dupa";
+      loop ();
+      render_obj_line ())
     end;
-    for i = 0 to 159 do
+    for i = 0 to screen_w -1 do
       match bgw_buffer.(i), obj_buffer.(i), State.GPUmem.LCD_Regs.bgwindow_ep st.gpu_mem.lcd_regs with
       (* No object pixel *)
-      | { color; palette; _}, {color = -1; _}, _ ->
-        push_pixel i ly bgw_palette palette color
+      | { color = bwcolor; palette; _}, {color = -1; _}, _ ->
+        (* print_endline "No object pixel"; *)
+        push_pixel ly i bgw_palette palette bwcolor
       (* Transparent object *)
-      | { color; palette; _}, {color = 0; _}, _ ->
-        push_pixel i ly bgw_palette palette color
+      | { color = bwcolor; palette; _}, {color = 0; _}, _ ->
+        print_endline "Transparent pixel";
+        push_pixel ly i bgw_palette palette bwcolor
       | _, {palette; color; _}, false
       | {prio = false; _}, {palette; color; prio = false; _}, true ->
-        push_pixel i ly obj_palette palette color
-      | {color = 0; _}, {palette; color; _}, true ->
-        push_pixel i ly obj_palette palette color
+        print_endline "obj priority";
+        push_pixel ly i obj_palette palette color
+      | {color = 0; _}, {palette; color = objcolor; _}, true ->
+        print_endline "obj priority";
+        push_pixel ly i obj_palette palette objcolor
       | {palette; color; _}, _, true ->
-        push_pixel i ly bgw_palette palette color
+        print_endline "bgw priority";
+        push_pixel ly i bgw_palette palette color
     done;
     reset_sprite_buffer ()
 

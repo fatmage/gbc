@@ -119,6 +119,7 @@ module Palettes_CGB : Palettes_intf = struct
     | 0xFF6B -> List.nth m.obj_cram @@ m.ocps land 0x3F
 
   let set m i v =
+    Utils.print_dec "Piszemy do palettes" v;
     match i with
     | 0xFF47 -> { m with bgp  = v }
     | 0xFF48 -> { m with obp0 = v }
@@ -280,8 +281,9 @@ module Make (M : Palettes_intf) : S = struct
         stat : int; scy: int; scx : int; wy : int; wx : int;
       }
 
+    (* TODO: experimented with ly = 0 instead of putting gameboy in vblank, come back here *)
     let initial =
-      { lcdc = 0x91; ly = 0x91; lyc = 0; dma = 0x00;
+      { lcdc = 0x91; ly = 0; lyc = 0; dma = 0x00;
         stat = 0x81; scy = 0; scx = 0; wy = 0; wx = 0 }
 
     let get m =

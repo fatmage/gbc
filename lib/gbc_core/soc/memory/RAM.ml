@@ -24,29 +24,37 @@ let make_chunk size start : (module Addressable.S) =
     in
     Cap (0, help (log2int size) (pow 2 ((log2int size) - 1)) 0)
 
-  let rec get mem index =
-    match mem, index with
-      | Cap (v,_), 0 -> v
-      | Cap (_,m), _ -> get m index
-      | Node (i,l,v,r), index ->
-        if index == i then
-        v else
-        if index < i then
-        get l index else
-        get r index
-      | _,_ -> failwith "no cap"
+  let get mem index =
+    let index = index - start in
+    let rec aux mem =
+      match mem, index with
+        | Cap (v,_), 0 -> v
+        | Cap (_,m), _ -> aux m
+        | Node (i,l,v,r), index ->
+          if index == i then
+          v else
+          if index < i then
+          aux l else
+          aux r
+        | _,_ -> Utils.fail_addr "no cap" index
+    in
+    aux mem
 
-  let rec set mem index v =
-    match mem, index with
-      | Cap (_,m), 0 -> Cap (v,m)
-      | Cap (x,m), _ -> Cap (x, set m index v)
-      | Node (i,l,x,r), index ->
-        if index == i then
-        Node (i,l,v,r) else
-        if index < i then
-        Node (i,set l index v,x,r) else
-        Node (i,l,x,set r index v)
-      | _,_ -> failwith "no cap"
+  let set mem index v =
+    let index = index - start in
+    let rec aux mem =
+      match mem, index with
+        | Cap (_,m), 0 -> Cap (v,m)
+        | Cap (x,m), _ -> Cap (x, aux m)
+        | Node (i,l,x,r), index ->
+          if index == i then
+          Node (i,l,v,r) else
+          if index < i then
+          Node (i,aux l,x,r) else
+          Node (i,l,x,aux r)
+        | _,_ -> Utils.fail_addr "no cap" index
+    in
+    aux mem
 
   let in_range n = n >= start && n < start + size
 

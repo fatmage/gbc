@@ -3,12 +3,12 @@ open Cartridge
 let gbc_module rom : (module CPU.S)=
   let mbc_type =
     match Bytes.get rom 0x147 |> int_of_char with
-    | 0x00               -> ROM_ONLY
-    | 0x01 | 0x02 | 0x03 -> MBC1
-    | 0x05 | 0x06        -> MBC2
-    | 0x08 | 0x09        -> ROM_RAM
+    | 0x00               -> print_endline "ROM_ONLY"; ROM_ONLY
+    | 0x01 | 0x02 | 0x03 -> print_endline "MBC1"; MBC1
+    | 0x05 | 0x06        -> print_endline "MBC2"; MBC2
+    | 0x08 | 0x09        -> print_endline "ROM_RAM"; ROM_RAM
     | 0x19 | 0x1A | 0x1B
-    | 0x1C | 0x1D | 0x1E -> MBC5
+    | 0x1C | 0x1D | 0x1E -> print_endline "MBC5"; MBC5
     | _ -> failwith "Cartridge type not implemented."
   in
   let rom_banks =

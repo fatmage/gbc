@@ -74,7 +74,7 @@ let mbc1 rom_banks ram_banks : (module S) = (module struct
 
   let in_low  i = 0x0000 <= i && i <= 0x3FFF
   let in_high i = 0x4000 <= i && i <= 0x7FFF
-  let in_rom i = in_low i && in_high i
+  let in_rom i = in_low i || in_high i
   let in_ram i = 0xA000 <= i && i <= 0xBFFF
 
   let bank_low m =
@@ -156,7 +156,7 @@ module RAM = (val RAM.make_chunk 512 0xA000)
 
   let in_low  i = 0x0000 <= i && i <= 0x3FFF
   let in_high i = 0x4000 <= i && i <= 0x7FFF
-  let in_rom i = in_low i && in_high i
+  let in_rom i = in_low i || in_high i
   let in_ram i = 0xA000 <= i && i <= 0xBFFF
 
 
@@ -207,7 +207,7 @@ let mbc5 ram_banks : (module S) = (module struct
 
   let in_low  i = 0x0000 <= i && i <= 0x3FFF
   let in_high i = 0x4000 <= i && i <= 0x7FFF
-  let in_rom i = in_low i && in_high i
+  let in_rom i = in_low i || in_high i
   let in_ram i = 0xA000 <= i && i <= 0xBFFF
 
   let addr_high m i = 0x4000 * m.rom_bank + i - 0x4000
@@ -226,6 +226,8 @@ let mbc5 ram_banks : (module S) = (module struct
     | _ when in_high i ->
       Bytes.get m.rom (addr_high m i) |> int_of_char
     | _ (* when in_ram i *) ->
+      Utils.print_hex i;
+      Utils.print_hex (addr_ram m i);
       if m.ram_enabled then RAM.get m.ram (addr_ram m i) else 0xFF
 
 

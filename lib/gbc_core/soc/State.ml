@@ -152,7 +152,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       | _ when DMAState.OAM.in_range addr
         -> DMAState.OAM.get st.dma_oam addr
       | _
-        -> failwith "Bus error: address out of range."
+        -> Utils.fail_addr "Bus get error: address out of range." addr
 
 
     let set8 st addr v =
@@ -196,11 +196,11 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       | _ when DMAState.OAM.in_range addr
         -> { st with dma_oam = DMAState.OAM.set st.dma_oam addr v }
       | _
-        -> failwith "Bus error: address out of range."
+        -> Utils.fail_addr "Bus set error: address out of range." addr
 
     let get16 st addr =
       (* if addr = 0xFF69 then get8 st addr else (* That's maybe how palletes work *) *)
-      let hi, lo = get8 st addr, get8 st (addr + 1) in
+      let lo, hi = get8 st addr, get8 st (addr + 1) in
       hi lsl 8 lor lo
 
     let set16 st addr v =

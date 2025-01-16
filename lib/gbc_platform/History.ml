@@ -24,7 +24,7 @@ module Make (State : Gbc_core.State.S) : (S with type state = State.t) = struct
 
   let move_back =
     function
-    | [] -> []
+    | [x] -> [x]
     | _ :: xs -> xs
 
   let rec move_back_n xs = function

@@ -4,7 +4,7 @@ module type S = sig
   module PPU : PPU.S
   module Instruction : Instruction.S
 
-  val cpu_step : State.t -> State.t * float
+  val cpu_step : State.t -> State.t * float * bool
 
   val init_gb : bytes -> State.t
 
@@ -276,7 +276,13 @@ module Make (State : State.S) : S = struct
     | 0xFF -> Instruction.iSET_u3r8 7 A
     | _ -> Instruction.iNOP
 
-  let fetch_decode st : Instruction.instruction =
+  let fetch_decode (st : State.t) : Instruction.instruction =
+
+    Utils.print_hex "3 next values at PC:" st.regs._PC;
+    Utils.value_hex (State.Bus.get8 st st.regs._PC);
+    Utils.value_hex (State.Bus.get8 st (st.regs._PC + 1));
+    Utils.value_hex (State.Bus.get8 st (st.regs._PC + 2));
+
     match State.Bus.get8 st st.regs._PC with
     | 0x00 -> Instruction.iNOP
     | 0x01 -> let n16 = State.Bus.get16 st (st.regs._PC + 1) in Instruction.iLD_rn16 BC n16
@@ -623,8 +629,8 @@ module Make (State : State.S) : S = struct
       let st = DMA_OAM.exec_dma st mc in
       let st = DMA_VRAM.exec_dma st mc in
       (* ppu *)
-      let st = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
-      st, State.mc_to_time st mc
+      let st, render = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
+      st, State.mc_to_time st mc, render
       (* w "mainie" bedizemy dodawac st ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
     | Halted ->
       (* check for interrupt *)
@@ -645,13 +651,13 @@ module Make (State : State.S) : S = struct
       (* hdma *)
       let st = DMA_VRAM.exec_dma st mc in
       (* ppu  *)
-      let st = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
-      st, State.mc_to_time st mc
+      let st, render = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
+      st, State.mc_to_time st mc, render
     | Stopped _ ->
       let mc = 4 in
 
       (* idea - do a set amount of cycles, progress dma hdma and ppu, and then after reaching x cycles change to running *)
-      st, State.mc_to_time st mc
+      st, State.mc_to_time st mc, false
 
 
   let init_gb rom =

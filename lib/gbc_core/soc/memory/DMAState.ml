@@ -39,6 +39,7 @@ module VRAM = struct
     | 0xFF53 -> m.hdma3
     | 0xFF54 -> m.hdma4
     | 0xFF55 -> m.hdma5
+    | _      -> assert false
 
   let set m i v =
     match i with
@@ -47,6 +48,7 @@ module VRAM = struct
     | 0xFF53 -> { m with hdma3 = v }
     | 0xFF54 -> { m with hdma4 = v }
     | 0xFF55 -> { m with hdma5 = v }
+    | _      -> assert false
 
   let in_range i = 0xFF51 <= i && i <= 0xF55
 

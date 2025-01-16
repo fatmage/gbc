@@ -1,6 +1,5 @@
-(* 4rd version - bytes in nodes with implicit inorder indexing *)
 
-module type S = sig
+(* module type S = sig
   include Addressable.S
 end
 
@@ -21,4 +20,4 @@ end)
 module Default = struct
   module M = (val make_rom true)
   include M
-end
+end *)

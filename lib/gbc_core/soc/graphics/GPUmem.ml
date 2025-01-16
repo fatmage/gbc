@@ -138,8 +138,8 @@ module Palettes_CGB : Palettes_intf = struct
 
   let rec nth_2 xs i =
     match xs,i with
-    | l::h::xs, 0 -> l lsl 8 lor h
-    | x::xs, i -> nth_2 xs (i-1)
+    | l::h::_, 0 -> l lsl 8 lor h
+    | _::xs, i -> nth_2 xs (i-1)
   let lookup_bgw m palette color = nth_2 m.bgw_cram (palette * 8 + (color * 2))
 
   let lookup_obj m palette color = nth_2 m.bgw_cram (palette * 8 + (color * 2))
@@ -376,7 +376,7 @@ module Make (M : Palettes_intf) : S = struct
       let palette = flags land 0x07 in
       let row = if y_flip then size - (ly - y_p) else ly - y_p in
       let p1, p2 = VRAM.get_obj_tile_data_row m.vram t_index size row bank in
-      let p1, p2 = if x_flip then Intops.rev_u8 p1, Intops.rev_u8 p2 else p1, p2 in
+      let p1, p2 = if x_flip then Utils.rev_u8 p1, Utils.rev_u8 p2 else p1, p2 in
       { x_p; p1; p2; palette; prio }
     in
     List.map scan_object_data objs

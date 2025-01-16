@@ -11,8 +11,8 @@ module MakeOAM (State : State.S) : (S with type state = State.t) = struct
     let rec aux (st : state) (DMAState.OAM.State.Active {src;progress}) n =
       match progress, n with
       | 160, _ -> { st with dma_oam = DMAState.OAM.set_state st.dma_oam Inactive }
-      | m, 0   -> { st with dma_oam = DMAState.OAM.set_state st.dma_oam @@ Active {src; progress} }
-      | m, n   -> aux (State.set_v8 st (0xFE00 + m) (State.get_v8 st (src + m))) (DMAState.OAM.State.Active {src; progress = m + 1}) (n - 1)
+      | progress, 0   -> { st with dma_oam = DMAState.OAM.set_state st.dma_oam @@ Active {src; progress} }
+      | progress, n   -> aux (State.set_v8 st (0xFE00 + progress) (State.get_v8 st (src + progress))) (DMAState.OAM.State.Active {src; progress = progress + 1}) (n - 1)
     in
     match st.dma_oam.state with
     | Inactive -> st
@@ -20,11 +20,11 @@ module MakeOAM (State : State.S) : (S with type state = State.t) = struct
 
 end
 
-(* move dma and hdma here *)
+(* TODO: HDMA *)
 
 module MakeVRAM (State : State.S) : (S with type state = State.t) = struct
   type state = State.t
 
-  let exec_dma (st : state) mc = st
+  let exec_dma (st : state) _ = st
 
 end

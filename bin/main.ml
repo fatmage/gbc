@@ -14,4 +14,4 @@ let () =
   let module GameBoyCaml = Gbc_platform.Emulator.Make(Implementation) in
   let renderer = Gbc_platform.Graphics.init_graphics () in
   let texture = Gbc_platform.Graphics.create_texture renderer in
-  GameBoyCaml.emulator_loop gbc GameBoyCaml.History.empty (Sys.time ()) 0. texture renderer
+  GameBoyCaml.emulator_loop gbc GameBoyCaml.History.empty (Sys.time ()) 0. 0. texture renderer

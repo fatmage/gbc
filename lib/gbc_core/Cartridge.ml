@@ -31,9 +31,9 @@ struct
       Bytes.get m i |> Char.code
     else
       0xFF
-  let set m i v = m
+  let set m _ _ = m
 
-  let load_rom m rom = rom
+  let load_rom _ rom = rom
   let in_range i = in_rom i || in_ram i
 end
 
@@ -146,10 +146,10 @@ let mbc1 rom_banks ram_banks : (module S) = (module struct
 
   let load_rom m rom = { m with rom }
 
-  let in_range i = in_rom i && in_ram i
+  let in_range i = in_rom i || in_ram i
 end)
 
-let mbc2 rom_banks : (module S) = (module struct
+let mbc2 : (module S) = (module struct
 module RAM = (val RAM.make_chunk 512 0xA000)
   type t = {rom : bytes; ram : RAM.t; rom_bank: int; ram_enabled : bool }
   let initial = { rom = Bytes.empty; ram = RAM.initial; rom_bank = 1; ram_enabled = false }
@@ -165,7 +165,7 @@ module RAM = (val RAM.make_chunk 512 0xA000)
     | _ when in_low i ->
       Bytes.get m.rom i |> int_of_char
     | _ when in_high i ->
-      Bytes.get m.rom (0x4000 * rom_banks + i - 0x4000) |> int_of_char
+      Bytes.get m.rom (0x4000 * m.rom_bank + i - 0x4000) |> int_of_char
     | _ when m.ram_enabled ->
       RAM.get m.ram (0xA000 + (i land 0x1F))
     | _ ->
@@ -188,7 +188,7 @@ module RAM = (val RAM.make_chunk 512 0xA000)
 
   let load_rom m rom = { m with rom }
 
-  let in_range i = in_rom i && in_ram i
+  let in_range i = in_rom i || in_ram i
 end)
 
 (*
@@ -198,7 +198,7 @@ end)
 
 (* No MBC4 *)
 
-let mbc5 rom_banks ram_banks : (module S) = (module struct
+let mbc5 ram_banks : (module S) = (module struct
 
   module RAM = (val RAM.make_chunk (ram_banks * 8192) 0xA000)
 
@@ -210,7 +210,7 @@ let mbc5 rom_banks ram_banks : (module S) = (module struct
   let in_rom i = in_low i && in_high i
   let in_ram i = 0xA000 <= i && i <= 0xBFFF
 
-  let addr_high m i = 0x4000 * m.ram_bank + i - 0x4000
+  let addr_high m i = 0x4000 * m.rom_bank + i - 0x4000
 
   let addr_ram m i =
     match ram_banks with
@@ -226,7 +226,7 @@ let mbc5 rom_banks ram_banks : (module S) = (module struct
     | _ when in_high i ->
       Bytes.get m.rom (addr_high m i) |> int_of_char
     | _ (* when in_ram i *) ->
-      RAM.get m.ram (addr_ram m i)
+      if m.ram_enabled then RAM.get m.ram (addr_ram m i) else 0xFF
 
 
   let set m i v =
@@ -247,5 +247,5 @@ let mbc5 rom_banks ram_banks : (module S) = (module struct
 
   let load_rom m rom = { m with rom }
 
-  let in_range i = true
+  let in_range i = in_rom i || in_ram i
 end)

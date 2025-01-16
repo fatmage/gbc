@@ -13,3 +13,10 @@ let rev_u8 u8 =
     | 0 -> acc
     | n -> loop ((acc lsl 1) lor (u8 land 1)) (u8 lsr 1) (n-1) in
     loop 0 u8 8
+
+
+let fail_value msg v = Printf.sprintf "%s Value: 0x%04X" msg v |> failwith
+let fail_addr msg addr = Printf.sprintf "%s Address: 0x%04X" msg addr |> failwith
+let unreachable () = failwith "Unreachable case."
+
+let print_hex v = Printf.sprintf "Value: 0x%08X" v |> print_endline

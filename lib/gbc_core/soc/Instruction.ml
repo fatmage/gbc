@@ -149,7 +149,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let iADC_Ar8 r8 : instruction = fun st ->
     let a, r = st.regs._A, State.get_r8 st r8 in
     let c = State.get_flag st Regs.Flag_c in
-    let sum = a + r + c in let res = Intops.u8 sum in
+    let sum = a + r + c in let res = Utils.u8 sum in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:(a land 0xF + r land 0xF + c > 0xF) ~c:(sum > 0xFF) (),
     Next, 1
@@ -158,21 +158,21 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     let a = st.regs._A in
     let hlp = State.get_HLp st in
     let c = State.get_flag st Regs.Flag_c in
-    let sum = a + hlp + c in let res = Intops.u8 sum in
+    let sum = a + hlp + c in let res = Utils.u8 sum in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:(a land 0xF + hlp land 0xF + c > 0xF) ~c:(sum > 0xFF) (),
     Next, 2
 
   let iADC_An8 n : instruction = fun st ->
     let a, c = st.regs._A, State.get_flag st (Regs.Flag_c) in
-    let sum = a + n + c in let res = Intops.u8 sum in
+    let sum = a + n + c in let res = Utils.u8 sum in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:(a land 0xF + n land 0xF + c > 0xF) ~c:(sum > 0xFF) (),
     Next, 2
 
   let iADD_Ar8 r8 : instruction = fun st ->
     let a, r = st.regs._A, State.get_r8 st r8 in
-    let sum = a + r in let res = Intops.u8 sum in
+    let sum = a + r in let res = Utils.u8 sum in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:(a land 0xF + r land 0xF > 0xF) ~c:(sum > 0xFF) (),
     Next, 1
@@ -180,14 +180,14 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let iADD_AHLp : instruction = fun st ->
     let a = st.regs._A in
     let hlp = State.get_HLp st in
-    let sum = a + hlp in let res = Intops.u8 sum in
+    let sum = a + hlp in let res = Utils.u8 sum in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:(a land 0xF + hlp land 0xF > 0xF) ~c:(sum > 0xFF) (),
     Next, 2
 
   let iADD_An8 n : instruction = fun st ->
     let a = st.regs._A in
-    let sum = a + n in let res = Intops.u8 sum in
+    let sum = a + n in let res = Utils.u8 sum in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:(a land 0xF + n land 0xF > 0xF) ~c:(sum > 0xFF) (),
     Next, 2
@@ -340,7 +340,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   (* 16-bit arithmetic instructions *)
   let iADD_HLr16 r : instruction = fun st ->
     let hl, x = State.get_HL st, State.get_r16 st r in
-    let sum = hl + x in let res = Intops.u16 sum in
+    let sum = hl + x in let res = Utils.u16 sum in
     State.set_flags (State.set_HL st res) ~n:false
     ~h:(hl land 0xFFF + x land 0xFFF > 0xFFF) ~c:(sum > 0xFFFF) (),
     Next, 2
@@ -406,21 +406,21 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   (* Bit Shift Instructions *)
   let iRL_r8 r : instruction = fun st ->
     let x, c = State.get_r8 st r, State.get_flag st Flag_c in
-    let shifted = x lsl 1 lor c in let res = Intops.u8 shifted in
+    let shifted = x lsl 1 lor c in let res = Utils.u8 shifted in
     State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
     ~h:false ~c:(x land 0x80 > 0) (),
     Next, 2
 
   let iRL_HLp : instruction = fun st ->
     let hlp, c = State.get_HLp st, State.get_flag st Flag_c in
-    let shifted = hlp lsl 1 lor c in let res = Intops.u8 shifted in
+    let shifted = hlp lsl 1 lor c in let res = Utils.u8 shifted in
     State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(hlp land 0x80 > 0) (),
     Next, 4
 
   let iRLA : instruction = fun st ->
     let a, c = st.regs._A, State.get_flag st Flag_c in
-    let shifted = a lsl 1 lor c in let res = Intops.u8 shifted in
+    let shifted = a lsl 1 lor c in let res = Utils.u8 shifted in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(a land 0x80 > 0) (),
     Next, 1
@@ -428,7 +428,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let iRLC_r8 r : instruction = fun st ->
     let x = State.get_r8 st r in
     let shifted = x lsl 1 in
-    let res = shifted land 0x100 lsr 8 lor shifted |> Intops.u8 in
+    let res = shifted land 0x100 lsr 8 lor shifted |> Utils.u8 in
     State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
     ~h:false ~c:(x land 0x80 > 0) (),
     Next, 2
@@ -436,7 +436,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let iRLC_HLp : instruction = fun st ->
     let hlp = State.get_HLp st in
     let shifted = hlp lsl 1 in
-    let res = shifted land 0x100 lsr 8 lor shifted |> Intops.u8 in
+    let res = shifted land 0x100 lsr 8 lor shifted |> Utils.u8 in
     State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(hlp land 0x80 > 0) (),
     Next, 4
@@ -444,91 +444,91 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let iRLCA : instruction = fun st ->
     let a = st.regs._A in
     let shifted = a lsl 1 in
-    let res = shifted land 0x100 lsr 8 lor shifted |> Intops.u8 in
+    let res = shifted land 0x100 lsr 8 lor shifted |> Utils.u8 in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(a land 0x80 > 0) (),
     Next, 1
 
   let iRR_r8 r : instruction = fun st ->
     let x, c = State.get_r8 st r, State.get_flag st Flag_c in
-    let shifted = x lsr 1 lor (c lsl 7) in let res = Intops.u8 shifted in
+    let shifted = x lsr 1 lor (c lsl 7) in let res = Utils.u8 shifted in
     State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
     ~h:false ~c:(x land 0b1 > 0) (),
     Next, 2
 
   let iRR_HLp : instruction = fun st ->
     let hlp, c = State.get_HLp st, State.get_flag st Flag_c in
-    let shifted = hlp lsr 1 lor (c lsl 7) in let res = Intops.u8 shifted in
+    let shifted = hlp lsr 1 lor (c lsl 7) in let res = Utils.u8 shifted in
     State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(hlp land 0b1 > 0) (),
     Next, 4
 
   let iRRA : instruction = fun st ->
     let a, c = st.regs._A, State.get_flag st Flag_c in
-    let shifted = a lsr 1 lor (c lsl 7) in let res = Intops.u8 shifted in
+    let shifted = a lsr 1 lor (c lsl 7) in let res = Utils.u8 shifted in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(a land 0b1 > 0) (),
     Next, 1
 
   let iRRC_r8 r : instruction = fun st ->
     let x = State.get_r8 st r in
-    let res = x lsr 1 lor (x land 0b1 lsl 7) |> Intops.u8 in
+    let res = x lsr 1 lor (x land 0b1 lsl 7) |> Utils.u8 in
     State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
     ~h:false ~c:(x land 0b1 > 0) (),
     Next, 2
 
   let iRRC_HLp : instruction = fun st ->
     let hlp = State.get_HLp st in
-    let res = hlp lsr 1 lor (hlp land 0b1 lsl 7) |> Intops.u8 in
+    let res = hlp lsr 1 lor (hlp land 0b1 lsl 7) |> Utils.u8 in
     State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(hlp land 0b1 > 0) (),
     Next, 4
 
   let iRRCA : instruction = fun st ->
     let a = st.regs._A in
-    let res = a lsr 1 lor (a land 0b1 lsl 7) |> Intops.u8 in
+    let res = a lsr 1 lor (a land 0b1 lsl 7) |> Utils.u8 in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(a land 0b1 > 0) (),
     Next, 1
 
   let iSLA_r8 r : instruction = fun st ->
     let x = State.get_r8 st r in
-    let res = x lsl 1 |> Intops.u8 in
+    let res = x lsl 1 |> Utils.u8 in
     State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
     ~h:false ~c:(x land 0x80 > 0) (),
     Next, 2
 
   let iSLA_HLp : instruction = fun st ->
     let hlp = State.get_HLp st in
-    let res = hlp lsl 1 |> Intops.u8 in
+    let res = hlp lsl 1 |> Utils.u8 in
     State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(hlp land 0x80 > 0) (),
     Next, 4
 
   let iSRA_r8 r : instruction = fun st ->
     let x = State.get_r8 st r in
-    let res = x lsr 1 lor (x land 0x80)|> Intops.u8 in
+    let res = x lsr 1 lor (x land 0x80)|> Utils.u8 in
     State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
     ~h:false ~c:(x land 0b1 > 0) (),
     Next, 2
 
   let iSRA_HLp : instruction = fun st ->
     let hlp = State.get_HLp st in
-    let res = hlp lsr 1 lor (hlp land 0x80) |> Intops.u8 in
+    let res = hlp lsr 1 lor (hlp land 0x80) |> Utils.u8 in
     State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(hlp land 0b1 > 0) (),
     Next, 4
 
   let iSRL_r8 r : instruction = fun st ->
     let x = State.get_r8 st r in
-    let res = x lsr 1 |> Intops.u8 in
+    let res = x lsr 1 |> Utils.u8 in
     State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
     ~h:false ~c:(x land 0b1 > 0) (),
     Next, 2
 
   let iSRL_HLp : instruction = fun st ->
     let hlp = State.get_HLp st in
-    let res = hlp lsr 1 |> Intops.u8 in
+    let res = hlp lsr 1 |> Utils.u8 in
     State.set_flags (State.set_HLp st res) ~z:(res = 0) ~n:false
     ~h:false ~c:(hlp land 0b1 > 0) (),
     Next, 4
@@ -592,7 +592,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let iLD_HLIpA : instruction = fun st ->
     let st' = State.set_HLp st (st.regs._A) in
-    State.set_HL st' (State.get_HL st' + 1 |> Intops.u16),
+    State.set_HL st' (State.get_HL st' + 1 |> Utils.u16),
     Next, 2
 
   let iLD_HLDpA : instruction = fun st ->
@@ -603,7 +603,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let iLD_AHLIp : instruction = fun st ->
     let st' = State.set_A st (State.get_HLp st) in
-    State.set_HL st' (State.get_HL st' +1 |> Intops.u16),
+    State.set_HL st' (State.get_HL st' +1 |> Utils.u16),
     Next, 2
 
   let iLD_AHLDp : instruction = fun st ->
@@ -644,7 +644,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     else st, Jump, 3
 
   let iJR_n8 n : instruction = fun st ->
-    State.adv_PC st (Intops.s8 n),
+    State.adv_PC st (Utils.s8 n),
     Jump, 3
 
   let iJR_cn8 c n : instruction = fun st ->
@@ -671,14 +671,14 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   (* Stack Operations Instructions *)
   let iADD_HLSP : instruction = fun st ->
     let hl, sp = State.get_HL st, State.get_SP st in
-    let sum = hl + sp in let res = Intops.u16 sum in
+    let sum = hl + sp in let res = Utils.u16 sum in
     State.set_flags (State.set_HL st res) ~n:false
     ~h:(hl land 0xFFF + sp land 0xFFF > 0xFFF) ~c:(sum > 0xFFFF) (),
     Next, 2
 
   let iADD_SPe8 e : instruction = fun st ->
     let sp = State.get_SP st in
-    let sum = sp + (Intops.s8 e) in let res = Intops.u16 sum in
+    let sum = sp + (Utils.s8 e) in let res = Utils.u16 sum in
     State.set_flags (State.set_SP st res) ~z:false ~n:false
     ~h:(sp land 0xF + e land 0xF > 0xF) ~c:(sp land 0xFF + e land 0xFF > 0xFF) (),
     Next, 4
@@ -701,7 +701,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let iLD_HLSPe8 e : instruction = fun st ->
     let sp = State.get_SP st in
-    let sum = sp + (Intops.s8 e) in let res = Intops.u16 sum in
+    let sum = sp + (Utils.s8 e) in let res = Utils.u16 sum in
     State.set_flags (State.set_HL st res) ~z:false ~n:false
     ~h:(sp land 0xF + e land 0xF > 0xF) ~c:(sp land 0xFF + e land 0xFF > 0xFF) (),
     Next, 3

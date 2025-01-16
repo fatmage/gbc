@@ -19,13 +19,13 @@ module Make (State : Gbc_core.State.S) : (S with type state = State.t) = struct
   let add_state xs st = st :: xs
   let get =
     function
-    | st :: sts -> st
+    | st :: _ -> st
     | [] -> failwith "Can't move back."
 
   let move_back =
     function
     | [] -> []
-    | st :: xs -> xs
+    | _ :: xs -> xs
 
   let rec move_back_n xs = function
   | 0 -> xs

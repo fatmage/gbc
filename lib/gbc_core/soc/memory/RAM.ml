@@ -15,11 +15,6 @@ let make_chunk size start : (module Addressable.S) =
 
   type t = Leaf | Node of int * t * int (* u8 *) * t | Cap of int (* u8 *) * t
 
-  let rec count_nodes mem =
-    match mem with
-      | Leaf -> 0
-      | Node (_,l,_,r) -> 1 + (count_nodes l) + (count_nodes r)
-      | Cap (_,m) -> 1 + (count_nodes m)
   let initial =
     let rec help n i offset=
       match n with
@@ -91,7 +86,8 @@ module WRAM = struct
     match m,i with
     | {svbk; _}, 0xFF70 -> svbk
     | {b0; _}, i when Bank0.in_range i -> Bank0.get b0 i
-    | {b0;bs=(b::bs);_}, i -> Banks.get b i
+    | {bs=(b::_);_}, i -> Banks.get b i
+    | _    -> assert false
 
   let rec rot (x::xs) =
     function
@@ -111,6 +107,7 @@ module WRAM = struct
       { m with b0 = Bank0.set b0 i v }
     | {bs = b::bs; _}, i ->
       { m with bs = Banks.set b i v :: bs }
+    | _    -> assert false
 
   let in_range i = Bank0.in_range i || Banks.in_range i || i = 0xFF70
 

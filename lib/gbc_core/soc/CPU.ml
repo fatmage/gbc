@@ -647,7 +647,7 @@ module Make (State : State.S) : S = struct
       (* ppu  *)
       let st = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
       st, State.mc_to_time st mc
-    | Stopped n ->
+    | Stopped _ ->
       let mc = 4 in
 
       (* idea - do a set amount of cycles, progress dma hdma and ppu, and then after reaching x cycles change to running *)

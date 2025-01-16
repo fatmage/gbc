@@ -112,6 +112,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     *)
 
     let get8 st addr =
+      Utils.print_hex addr;
       match addr with
       | _ when Cartridge.in_range addr (* ROM + external RAM *)
         -> Cartridge.get st.cartridge addr

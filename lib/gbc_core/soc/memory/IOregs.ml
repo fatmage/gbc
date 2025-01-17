@@ -17,7 +17,8 @@ module Joypad = struct
   type t = int
   let initial = 0xCF
   let get m _ = m
-  let set m _ v = m land 0x0F lor (v land 0xF0)
+  let set m _ v =
+    Utils.print_hex "Setting joypad" v; ((lnot m) land 0x30) lor 0x0F
   let set_input _ v = v
   let in_range v = v = 0xFF00
 end
@@ -89,7 +90,8 @@ module Timer = struct
   let tima_mcyc m = m.tima
   let mcyc_to_hz v double =
     if double then 1048576 / v else 2097152 / v
-  let switch_speed m = { m with speed = not m.speed; key1 = m.key1 lxor 0x80 }
+  let switch_speed m = { m with speed = not m.speed; key1 = m.key1 lxor 0x81 }
+  let switch_requested m = m.key1 land 0x01 > 0
   let run_div m cycles =
     let rec aux m =
       function
@@ -118,7 +120,7 @@ module Timer = struct
 
   let get_speed m = m.speed
 
-  let tmul m = if m.speed then 1. /. 8388608. else 1. /. 4194304.
+  let tmul m = if m.speed then 4. /. 8388608. else 4. /. 4194304.
   let in_range i = (0xFF04 <= i && i <= 0xFF07) || i = 0xFF4D
 end
 

@@ -300,7 +300,7 @@ module Make (State : State.S) : S = struct
     | 0x0D -> Instruction.iDEC_r8 C, 1
     | 0x0E -> let n8 = State.Bus.get8 st (st.regs._PC + 1) in Instruction.iLD_rn8 C n8, 2
     | 0x0F -> Instruction.iRRCA, 1
-    | 0x10 -> let n8 = State.Bus.get8 st (st.regs._PC + 1) in Instruction.iSTOP n8, 2
+    | 0x10 -> Instruction.iSTOP st
     | 0x11 -> let n16 = State.Bus.get16 st (st.regs._PC + 1) in Instruction.iLD_rn16 DE n16, 3
     | 0x12 -> Instruction.iLD_r16pA DE, 1
     | 0x13 -> Instruction.iINC_r16 DE, 1
@@ -556,11 +556,9 @@ module Make (State : State.S) : S = struct
 
   let execute (instr : Instruction.instruction) st length =
     match instr st with
-    | st, Stop, cycles -> st, cycles
-    | st, Halt, cycles -> st, cycles
-    | st, Jump, cycles -> st, cycles
     | st, Next, cycles ->
-      { st with regs = { st.regs with _PC = st.regs._PC + length } }, cycles
+      State.adv_PC st length, cycles
+    | st, Jump, cycles -> st, cycles
 
   let fetch_decode_execute (st : State.t) =
     let st, (instr, length) =
@@ -594,23 +592,29 @@ module Make (State : State.S) : S = struct
           | 3 -> { st with activity = Running }, 0x50, Running
           | 4 -> { st with activity = Running }, 0x58, Running
           | 5 -> { st with activity = Running }, 0x60, Running
-          | _ -> st, 0x00, Halted
+          | _ -> st, 0x00, st.activity
           end
       | Disabled ->
           begin match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
           | 1 | 2 | 3 | 4 | 5 -> { st with activity = Running }, 0x00, Running
-          | _ -> st, 0x00, Halted
+          | _ -> st, 0x00, st.activity
           end
       | Enabling ->
           begin match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
           | 1 | 2 | 3 | 4 | 5 -> { st with activity = Running }, 0x00, Running
-          | _ -> st, 0x00, Halted
+          | _ -> st, 0x00, st.activity
           end
     in
     match act, addr with
-    | Running, 0x00 -> fetch_decode_execute st
-    | Running, n    -> execute (Instruction.interrupt_service_routine n) st 0
-    | Halted,  _    -> st, 1
+    | Running, 0x00  -> fetch_decode_execute st
+    | Running, n     -> execute (Instruction.interrupt_service_routine n) st 0
+    | Halted (-1), _ -> st, 1
+    | Halted 1, _    ->     Utils.print_hex "3 next values at PC when exiting halt:" st.regs._PC;
+    Utils.value_hex (State.Bus.get8 st st.regs._PC);
+    Utils.value_hex (State.Bus.get8 st (st.regs._PC + 1));
+    Utils.value_hex (State.Bus.get8 st (st.regs._PC + 2));{ st with activity = Running }, 1
+    | Halted n, _    -> { st with activity = Halted (n-1) }, 1
+
 
   let cpu_step (st : State.t) =
     match st.activity with
@@ -635,8 +639,9 @@ module Make (State : State.S) : S = struct
       let st, render = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
       st, State.mc_to_time st mc, render
       (* w "mainie" bedizemy dodawac st ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
-    | Halted ->
+    | Halted _ ->
       (* check for interrupt *)
+      Utils.print_hex "Halted loop PC state" st.regs._PC;
       let st, mc = poll_interrupts_halted st in
       (* timer *)
       (* run div *)
@@ -656,11 +661,11 @@ module Make (State : State.S) : S = struct
       (* ppu  *)
       let st, render = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
       st, State.mc_to_time st mc, render
-    | Stopped _ ->
-      let mc = 4 in
-
-      (* idea - do a set amount of cycles, progress dma hdma and ppu, and then after reaching x cycles change to running *)
-      st, State.mc_to_time st mc, false
+    | Stopped ->
+      if (IOregs.Joypad.get st.joypad 0) land 0x0F != 0x0F then
+        { st with activity = Running }, 0., false
+      else
+        st, 0., false
 
 
   let init_gb rom =

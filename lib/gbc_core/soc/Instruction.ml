@@ -3,7 +3,7 @@
 module type S = sig
   type state
 
-  type next_action = Next | Jump | Halt | Stop
+  type next_action = Next | Jump
   type instruction = state -> state * next_action * int
   type condition = Cnz | Cz | Cnc | Cc
 
@@ -128,7 +128,8 @@ module type S = sig
   val iHALT : instruction
   val iNOP : instruction
   val iSCF : instruction
-  val iSTOP : int -> instruction
+  (* Special case *)
+  val iSTOP : state -> instruction * int
   (* Not an actual instruction *)
   val interrupt_service_routine : int -> instruction
 
@@ -139,7 +140,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   type state = State.t
 
-  type next_action = Next | Jump | Halt | Stop
+  type next_action = Next | Jump
 
   type instruction = State.t -> State.t * next_action * int
 
@@ -622,7 +623,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     | Cc     -> State.get_flag st Flag_c == 1
 
   let iCALL_n16 n : instruction = fun st ->
-    State.set_PC (State.set_SPp (State.dec_SP st) (State.get_PC st)) n,
+    State.set_PC (State.set_SPp (State.dec_SP st) ((State.get_PC st) + 3)) n,
     Jump, 6
 
   let iCALL_cn16 c n : instruction = fun st ->
@@ -653,6 +654,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     else st, Next, 2
 
   let iRET : instruction = fun st ->
+    Utils.print_hex "SP value" st.regs._SP ;
+    Utils.print_hex "SPp value" (State.get_SPp st);
     State.set_PC st (State.get_SPp st), Jump, 4
 
   let iRET_c c : instruction = fun st ->
@@ -766,11 +769,11 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let iHALT : instruction = fun st ->
     match st.ime with
-    | Enabled  -> { st with activity = Halted }, Halt, 1
+    | Enabled  -> { st with activity = Halted (-1) }, Next, 1
     | Disabled ->
       let _if, _ie = State.Bus.get8 st 0xFF0F, State.Bus.get8 st 0xFFFF in
       if _if land _ie = 0
-      then { st with activity = Halted }, Halt, 1
+      then { st with activity = Halted (-1) }, Next, 1
       (* HALT BUG TODO *)
       else st, Next, 1
 
@@ -780,8 +783,38 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let iSCF : instruction = fun st ->
     State.set_flags st ~n:false ~h:false ~c:true (), Next, 1
 
-  let iSTOP _ : instruction = fun st ->
-    { st with activity = Stopped 0; timer = IOregs.Timer.switch_speed (IOregs.Timer.reset_div st.timer) }, Stop, 0
+  (* Special case - STOP instruction https://gbdev.io/pandocs/Reducing_Power_Consumption.html#using-the-stop-instruction *)
+
+
+  let iSTOP (state : State.t) : instruction * int =
+    Utils.print_hex "Joypad state" (IOregs.Joypad.get state.joypad 0);
+    match 0x0F land IOregs.Joypad.get state.joypad 0 with
+    | 0x0F ->
+      print_endline "no button pressed";
+      begin match IOregs.Timer.switch_requested state.timer (* was a speed switch requested in key1 *) with
+      | true ->
+        print_endline "switch requested";
+        if State.interrupts_pending state > 0 then
+          let _ = print_endline "interrupt pending" in
+          (fun st -> ({ st with timer = IOregs.Timer.switch_speed (IOregs.Timer.reset_div st.timer) }, Next, 1)), 1
+        else
+          let _ = print_endline "no interrupt pending" in
+          (fun st -> ({ st with activity = Halted 0x8000; timer = IOregs.Timer.switch_speed (IOregs.Timer.reset_div st.timer) }, Next, 1)), 2
+      | false ->
+        let _ = print_endline "switch not requested" in
+          (fun st -> ({ st with activity = Stopped; timer = IOregs.Timer.reset_div st.timer }, Next, 1)),
+          if State.interrupts_pending state > 0 then 1 else 2
+      end
+    | _    ->
+      let _ = print_endline "button pressed" in
+      if State.interrupts_pending state > 0 then
+        let _ = print_endline "interrupt pending" in
+        iNOP, 1
+      else
+        let _ = print_endline "no interrupt pending" in
+        (fun st -> st, Next, 1), 2
+
+
 
 
   (* Not an actual instruction *)

@@ -4,7 +4,7 @@ open IOregs
 
 module type S = sig
   type interrupts = Disabled | Enabling | Enabled
-  type cpu_activity = Running | Halted | Stopped of int
+  type cpu_activity = Running | Halted of int | Stopped
 
   module Cartridge : Cartridge.S
   module GPUmem : GPUmem.S
@@ -58,6 +58,7 @@ module type S = sig
   val request_timer : t -> t
   val request_LCD : t -> t
   val request_VBlank : t -> t
+  val interrupts_pending : t -> int
   val inc_ly : t -> t
   val reset_ly : t -> t
   val get_ly : t -> int
@@ -78,7 +79,7 @@ end
 module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   type interrupts = Disabled | Enabling | Enabled
 
-  type cpu_activity = Running | Halted | Stopped of int
+  type cpu_activity = Running | Halted of int | Stopped
 
   module Cartridge = M1
   module GPUmem = M2
@@ -144,7 +145,9 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       (* BG/OBJ palettes *)
       (* WRAM bank select *)
       | _ when RAM.HRAM.in_range addr (* HRAM *)
-        -> RAM.HRAM.get st.hram addr
+        ->  Utils.print_hex "Getting HRAM at addr" addr;
+          let v = RAM.HRAM.get st.hram addr in
+          Utils.value_hex v; v
       | _ when IE.in_range addr (* Interrupt Enable register *)
         -> IE.get st.ie addr
       | _ when DMAState.VRAM.in_range addr
@@ -188,7 +191,9 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       (* BG/OBJ palettes *)
       (* WRAM bank select *)
       | _ when RAM.HRAM.in_range addr (* HRAM *)
-        -> { st with hram = RAM.HRAM.set st.hram addr v }
+        -> Utils.print_hex "Setting HRAM at addr" addr;
+           Utils.value_hex v;
+        { st with hram = RAM.HRAM.set st.hram addr v }
       | _ when IE.in_range addr (* Interrupt Enable register *)
         -> { st with ie = IE.set st.ie addr v }
       | _ when DMAState.VRAM.in_range addr
@@ -204,8 +209,12 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       hi lsl 8 lor lo
 
     let set16 st addr v =
-      let hi, lo = v land 0xFF00 lsr 8, v land 0xFF in
-      set8 (set8 st addr hi) (addr + 1) lo
+      Utils.print_hex "Set 16 at address" addr;
+      let hi, lo = (v land 0xFF00) lsr 8, v land 0xFF in
+      Utils.print_hex "Value" v;
+      Utils.print_hex "High" hi;
+      Utils.print_hex "Low" lo;
+      set8 (set8 st addr lo) (addr + 1) hi
 
   end
 
@@ -261,6 +270,8 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   let request_timer st = if IE.enabled_timer st.ie then { st with iflag = Interrupts.request_timer st.iflag } else st
   let request_LCD st = if IE.enabled_LCD st.ie then { st with iflag = Interrupts.request_LCD st.iflag } else st
   let request_VBlank st = if IE.enabled_VBlank st.ie then { st with iflag = Interrupts.request_VBlank st.iflag } else st
+
+  let interrupts_pending st = (IE.get st.ie 0) land (Interrupts.get st.iflag 0)
 
   let inc_ly st = { st with gpu_mem = GPUmem.inc_ly st.gpu_mem }
   let reset_ly st = { st with gpu_mem = GPUmem.reset_ly st.gpu_mem }

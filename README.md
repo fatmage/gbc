@@ -1,22 +1,15 @@
-# gbc
+# GameBoyCaml
 
 
 ## Roadmap:
 
- - TODO: implement KEY1 register, look through unused fields in state
-
- - intialisation - read cartridge header, check which mbc, set rom and
-   ram in State to the corresponding mbc one nad then read the code to rom
-
- - implement graphics
-
- - check if it works at all
+ - make it work, endiannes of bytes is wonky, PUSH AF, CALL n16 is doing something wrong with the stack
 
  - implement DMG compatible versions of modules
 
  - implement VRAM DMA
 
- - implement missing functionalities from the cpu, mainly STOP instruction
+ - implement missing functionalities from the cpu
 
  - controls/user interface
 

@@ -24,7 +24,7 @@ struct
   type t = bytes
   let initial = Bytes.empty
 
-  let in_rom i = 0x0000 <= i && i <= 0xFFFF
+  let in_rom i = 0x0000 <= i && i <= 0x7FFF
   let in_ram i = 0xA000 <= i && i <= 0xBFFF
   let get m i =
     if in_rom i then
@@ -43,7 +43,7 @@ struct
 
   type t = bytes * Bank.t
   let initial = Bytes.empty, Bank.initial
-  let in_rom i = 0x0000 <= i && i <= 0xFFFF
+  let in_rom i = 0x0000 <= i && i <= 0x7FFF
   let in_ram i = 0xA000 <= i && i <= 0xBFFF
 
   let get (rom, ram) i =

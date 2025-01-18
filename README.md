@@ -3,7 +3,7 @@
 
 ## Roadmap:
 
- - make it work
+ - make it work, loops at 0x09C2, RET instruction
 
  - implement DMG compatible versions of modules
 

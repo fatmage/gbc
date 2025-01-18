@@ -50,7 +50,7 @@ module VRAM = struct
     | 0xFF55 -> { m with hdma5 = v }
     | _      -> assert false
 
-  let in_range i = 0xFF51 <= i && i <= 0xF55
+  let in_range i = 0xFF51 <= i && i <= 0xF555
 
   let state { state; _ } = state
 end

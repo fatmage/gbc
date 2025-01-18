@@ -111,8 +111,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     *)
 
     let get8 st addr =
-      (* print_endline "get";
-      Utils.print_hex addr; *)
+      (* Utils.print_hex "Bus get8" addr; *)
       match addr with
       | _ when Cartridge.in_range addr (* ROM + external RAM *)
         -> Cartridge.get st.cartridge addr
@@ -122,6 +121,8 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       | _ when RAM.WRAM.in_range addr (* WRAM *)
         -> RAM.WRAM.get st.wram addr
       (* ECHO RAM *)
+      | _ when RAM.WRAM.in_echo addr
+        -> RAM.WRAM.get st.wram (addr - 0x2000)
       (* OAM *)
       (* I/O Registers *)
       | _ when Joypad.in_range addr (* Joypad *)
@@ -155,8 +156,8 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
 
 
     let set8 st addr v =
-      Utils.print_hex "set addr" addr;
-      Utils.print_hex "set value" v;
+      Utils.print_hex "set8 addr" addr;
+      Utils.print_hex "set8 value" v;
       match addr with
       | _ when Cartridge.in_range addr (* ROM + external cartridge *)
         -> { st with cartridge = Cartridge.set st.cartridge addr v }
@@ -166,6 +167,8 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       | _ when RAM.WRAM.in_range addr (* WRAM *)
         -> { st with wram = RAM.WRAM.set st.wram addr v }
       (* ECHO RAM *)
+      | _ when RAM.WRAM.in_echo addr
+        -> { st with wram = RAM.WRAM.set st.wram (addr - 0x2000) v }
       (* OAM *)
       (* I/O Registers *)
       | _ when Joypad.in_range addr (* Joypad *)

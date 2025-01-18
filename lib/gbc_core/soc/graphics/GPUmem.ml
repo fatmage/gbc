@@ -213,7 +213,7 @@ module Make (M : Palettes_intf) : S = struct
       in
       aux [] m 0
 
-    let in_range i = i >= 0xFE00 && i <= 0xFE9F
+    let in_range i = 0xFE00 <= i && i <= 0xFE9F
   end
 
   module VRAM = struct

@@ -48,7 +48,10 @@ module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
       | { back = true; modifier;_ } ->
         Input.dbg_input := { !Input.dbg_input with back= false };
         let move_back hs =
-          if modifier then History.move_back_n hs 100 else History.move_back hs
+          if modifier then
+            let _ = print_endline "Moving back 500 states" in History.move_back_n hs 500
+          else
+            let _ = print_endline "Moving back one state" in History.move_back hs
         in
         let history = move_back history in
         let st = History.get history in

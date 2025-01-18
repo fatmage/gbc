@@ -56,7 +56,7 @@ let make_chunk size start : (module Addressable.S) =
     in
     aux mem
 
-  let in_range n = n >= start && n < start + size
+  let in_range n = start <= n && n < start + size
 
 end)
     (* https://gbdev.io/pandocs/Memory_Map.html
@@ -119,9 +119,11 @@ module WRAM = struct
 
   let in_range i = Bank0.in_range i || Banks.in_range i || i = 0xFF70
 
+  let in_echo i = 0xC000 <= i && i <= 0xDDFF
+
 end
 
 module HRAM = struct
-  module M = (val make_chunk 126 0xFF80)
+  module M = (val make_chunk 127 0xFF80)
   include M
 end

@@ -277,11 +277,13 @@ module Make (State : State.S) : S = struct
     | _ -> Instruction.iNOP
 
   let fetch_decode (st : State.t) : Instruction.instruction * int =
-
-    Utils.print_hex "3 next values at PC:" st.regs._PC;
+    print_endline "========= FETCH_DECODE START =========";
+    Utils.print_hex "3 next values at PC" st.regs._PC;
     Utils.value_hex (State.Bus.get8 st st.regs._PC);
     Utils.value_hex (State.Bus.get8 st (st.regs._PC + 1));
     Utils.value_hex (State.Bus.get8 st (st.regs._PC + 2));
+    Utils.print_hex "SP value" st.regs._SP;
+    Utils.print_hex "Value at SP" @@ State.get_SPp st;
 
     match State.Bus.get8 st st.regs._PC with
     | 0x00 -> Instruction.iNOP, 1

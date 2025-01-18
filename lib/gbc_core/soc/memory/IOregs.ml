@@ -63,7 +63,7 @@ module Timer = struct
     | 0xFF05 -> { m with tima = v }
     | 0xFF06 -> { m with tma  = v }
     | 0xFF07 -> { m with tac  = v }
-    | 0xFF4D -> { m with key1 = (m.key1 land 0x80) lor (v land 0x7F) }
+    | 0xFF4D -> { m with key1 = (m.key1 land 0xFE) lor v }
     | _    -> assert false
 
   let reset_div m = { m with div = 0 }

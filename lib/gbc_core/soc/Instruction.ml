@@ -3,7 +3,7 @@
 module type S = sig
   type state
 
-  type next_action = Next | Jump
+  type next_action = Next | Jump | RelJump
   type instruction = state -> state * next_action * int
   type condition = Cnz | Cz | Cnc | Cc
 
@@ -140,7 +140,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   type state = State.t
 
-  type next_action = Next | Jump
+  type next_action = Next | Jump | RelJump
 
   type instruction = State.t -> State.t * next_action * int
 
@@ -584,8 +584,11 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Next, 4
 
   let iLDH_An16p n : instruction = fun st ->
-    State.set_A st (State.Bus.get8 st (0xFF00 + n)),
-    Next, 3
+    Utils.print_hex "LDH_An16p offset" n;
+    let a,b,c = State.set_A st (State.Bus.get8 st (0xFF00 + n)),
+    Next, 3 in
+    print_endline "przeszlismy";
+    a,b,c
 
   let iLDH_ACp : instruction = fun st ->
     State.set_A st (State.Bus.get8 st (st.regs._C + 0xFF00)),
@@ -617,10 +620,10 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let check_condition st =
     function
-    | Cnz    -> State.get_flag st Flag_z == 0
-    | Cz     -> State.get_flag st Flag_z == 1
-    | Cnc    -> State.get_flag st Flag_c == 0
-    | Cc     -> State.get_flag st Flag_c == 1
+    | Cnz    -> State.get_flag st Flag_z = 0
+    | Cz     -> State.get_flag st Flag_z = 1
+    | Cnc    -> State.get_flag st Flag_c = 0
+    | Cc     -> State.get_flag st Flag_c = 1
 
   let iCALL_n16 n : instruction = fun st ->
     State.set_PC (State.set_SPp (State.dec_SP st) ((State.get_PC st) + 3)) n,
@@ -645,8 +648,10 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     else st, Jump, 3
 
   let iJR_n8 n : instruction = fun st ->
+    Utils.print_dec "Unsigned relative jump" n;
+    Utils.print_dec "Signed relative jump" (Utils.s8 n);
     State.adv_PC st (Utils.s8 n),
-    Jump, 3
+    RelJump, 3
 
   let iJR_cn8 c n : instruction = fun st ->
     if check_condition st c
@@ -654,8 +659,6 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     else st, Next, 2
 
   let iRET : instruction = fun st ->
-    Utils.print_hex "SP value" st.regs._SP ;
-    Utils.print_hex "SPp value" (State.get_SPp st);
     State.set_PC st (State.get_SPp st), Jump, 4
 
   let iRET_c c : instruction = fun st ->
@@ -726,7 +729,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Next, 3
 
   let iPUSH_AF : instruction = fun st ->
-    State.dec_SP (State.set_SPp st (State.get_r16 st AF)),
+    State.set_SPp (State.dec_SP st) (State.get_r16 st AF),
     Next, 4
 
   let iPUSH_r16 r : instruction = fun st ->
@@ -819,6 +822,11 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   (* Not an actual instruction *)
   let interrupt_service_routine handler : instruction = fun st ->
+    Utils.print_hex "Entering interrupt service routine" handler;
+    Utils.print_hex "3 next values at address:" handler;
+    Utils.value_hex (State.Bus.get8 st handler);
+    Utils.value_hex (State.Bus.get8 st (handler + 1));
+    Utils.value_hex (State.Bus.get8 st (handler + 2));
     State.set_PC (State.set_SPp (State.dec_SP st) (State.get_PC st)) handler,
     Jump, 5
 

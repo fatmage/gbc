@@ -12,8 +12,7 @@ module type S = sig
   type t =
   {
     cartridge : Cartridge.t; (* ROM + external RAM *)
-    regs: Regs.regfile; flags : Regs.flags;
-    wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
+    regs: Regs.regfile; wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
     hram : RAM.HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
@@ -87,8 +86,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   type t =
   {
     cartridge : Cartridge.t; (* ROM + external RAM *)
-    regs: Regs.regfile; flags : Regs.flags;
-    wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
+    regs: Regs.regfile; wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
     hram : RAM.HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
@@ -145,9 +143,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       (* BG/OBJ palettes *)
       (* WRAM bank select *)
       | _ when RAM.HRAM.in_range addr (* HRAM *)
-        ->  Utils.print_hex "Getting HRAM at addr" addr;
-          let v = RAM.HRAM.get st.hram addr in
-          Utils.value_hex v; v
+        ->  RAM.HRAM.get st.hram addr
       | _ when IE.in_range addr (* Interrupt Enable register *)
         -> IE.get st.ie addr
       | _ when DMAState.VRAM.in_range addr
@@ -159,12 +155,12 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
 
 
     let set8 st addr v =
-      (* print_endline "set";
-      Utils.print_hex addr; *)
+      Utils.print_hex "set addr" addr;
+      Utils.print_hex "set value" v;
       match addr with
       | _ when Cartridge.in_range addr (* ROM + external cartridge *)
         -> { st with cartridge = Cartridge.set st.cartridge addr v }
-      | _ when GPUmem.VRAM.in_range addr (* VRAM, OAM, LCD control, palettes *)
+      | _ when GPUmem.in_range addr (* VRAM, OAM, LCD control, palettes *)
         -> { st with gpu_mem = GPUmem.set st.gpu_mem addr v }
       (* External RAM *)
       | _ when RAM.WRAM.in_range addr (* WRAM *)
@@ -191,9 +187,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       (* BG/OBJ palettes *)
       (* WRAM bank select *)
       | _ when RAM.HRAM.in_range addr (* HRAM *)
-        -> Utils.print_hex "Setting HRAM at addr" addr;
-           Utils.value_hex v;
-        { st with hram = RAM.HRAM.set st.hram addr v }
+        -> { st with hram = RAM.HRAM.set st.hram addr v }
       | _ when IE.in_range addr (* Interrupt Enable register *)
         -> { st with ie = IE.set st.ie addr v }
       | _ when DMAState.VRAM.in_range addr
@@ -209,19 +203,14 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       hi lsl 8 lor lo
 
     let set16 st addr v =
-      Utils.print_hex "Set 16 at address" addr;
       let hi, lo = (v land 0xFF00) lsr 8, v land 0xFF in
-      Utils.print_hex "Value" v;
-      Utils.print_hex "High" hi;
-      Utils.print_hex "Low" lo;
       set8 (set8 st addr lo) (addr + 1) hi
 
   end
 
   let initial =
     {
-      cartridge = Cartridge.initial; regs = Regs.initial_regfile;
-      flags = Regs.initial_flags; wram = RAM.WRAM.initial;
+      cartridge = Cartridge.initial; regs = Regs.initial_regfile; wram = RAM.WRAM.initial;
       gpu_mem = GPUmem.initial; hram = RAM.HRAM.initial; joypad = Joypad.initial;
       serial = Serial.initial; timer = Timer.initial; iflag = Interrupts.initial;
       audio = Audio.initial; wave = WavePattern.initial;
@@ -237,12 +226,12 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   let get_r16 st rr = Regs.get_r16 st.regs rr
   let get_v8 st addr = Bus.get8 st addr
 
-  let get_flag st f = Regs.get_flag st.flags f
-  let set_flag st f v = { st with flags = Regs.set_flag st.flags f v }
+  let get_flag st f = Regs.get_flag st.regs f
+  let set_flag st f v = { st with regs = Regs.set_flag st.regs f v }
   let set_flags st
-    ?(z=st.flags.z) ?(n=st.flags.n)
-    ?(h=st.flags.h) ?(c=st.flags.c) () =
-    { st with flags = { z; n; h; c } }
+    ?(z=st.regs.flags.z) ?(n=st.regs.flags.n)
+    ?(h=st.regs.flags.h) ?(c=st.regs.flags.c) () =
+    { st with regs = { st.regs with flags = { z; n; h; c; low_nibble = st.regs.flags.low_nibble } } }
 
   let get_A st = st.regs._A
   let set_A st v = { st with regs = { st.regs with _A = v } }
@@ -290,8 +279,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   let init_cgb st =
     {
       st with
-      regs = Regs.initial_regfile_cgb;
-      flags = Regs.initial_flags; wram = RAM.WRAM.initial;
+      regs = Regs.initial_regfile_cgb; wram = RAM.WRAM.initial;
       gpu_mem = GPUmem.initial; hram = RAM.HRAM.initial; joypad = Joypad.initial;
       serial = Serial.initial; timer = Timer.initial; iflag = Interrupts.initial;
       audio = Audio.initial; wave = WavePattern.initial;

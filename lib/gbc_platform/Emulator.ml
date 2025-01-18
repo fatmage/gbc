@@ -30,6 +30,7 @@ module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
         let joypad = GBC.State.get_joypad st in
         let st = GBC.State.set_joypad st @@ Input.set_joypad joypad in
         (* Final state in this step *)
+        (* TODO: maybe don't add the state when in stop mode *)
         let history = History.add_state history st in
         emulator_loop st history curr_time delta_time cpu_time texture renderer
       else
@@ -43,7 +44,6 @@ module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
       let time = Sys.time () in
       emulator_loop st history time 0. 0. texture renderer
     else
-      (* TODO: implement debugger loop *)
       match !Input.dbg_input with
       | { back = true; modifier;_ } ->
         Input.dbg_input := { !Input.dbg_input with back= false };

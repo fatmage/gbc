@@ -3,7 +3,7 @@
 
 ## Roadmap:
 
- - make it work, endiannes of bytes is wonky, PUSH AF, CALL n16 is doing something wrong with the stack
+ - make it work
 
  - implement DMG compatible versions of modules
 

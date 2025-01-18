@@ -558,20 +558,22 @@ module Make (State : State.S) : S = struct
     match instr st with
     | st, Next, cycles ->
       State.adv_PC st length, cycles
+    | st, RelJump, cycles ->
+      State.adv_PC st length, cycles
     | st, Jump, cycles -> st, cycles
 
   let fetch_decode_execute (st : State.t) =
     let st, (instr, length) =
       match st.ime with
       | Enabled  ->
-        let addr =
+        let st, addr =
           match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
-          | 1 -> 0x40 (* VBlank *)
-          | 2 -> 0x48 (* LCD *)
-          | 3 -> 0x50 (* Timer *)
-          | 4 -> 0x58 (* Serial *)
-          | 5 -> 0x60 (* Joypad *)
-          | _ -> 0x00 (* None *)
+          | 1 -> { st with iflag = IOregs.Interrupts.handled_VBlank st.iflag }, 0x40 (* VBlank *)
+          | 2 -> { st with iflag = IOregs.Interrupts.handled_LCD st.iflag }, 0x48 (* LCD *)
+          | 3 -> { st with iflag = IOregs.Interrupts.handled_timer st.iflag }, 0x50 (* Timer *)
+          | 4 -> { st with iflag = IOregs.Interrupts.handled_serial st.iflag }, 0x58 (* Serial *)
+          | 5 -> { st with iflag = IOregs.Interrupts.handled_joypad st.iflag }, 0x60 (* Joypad *)
+          | _ -> st, 0x00 (* None *)
         in
         begin match addr with
         | 0 -> st, fetch_decode st

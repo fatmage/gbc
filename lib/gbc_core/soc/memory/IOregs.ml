@@ -44,14 +44,14 @@ module Timer = struct
   let get m i =
     match i with
     | 0xFF04 -> m.div
-    | 0xFF05 ->
-      begin match m.tima with
+    | 0xFF05 -> m.tima
+      (* begin match m.tima with
       | 256 -> 0b00
       | 4   -> 0b01
       | 16  -> 0b10
       | 64  -> 0b11
       | _   -> assert false
-      end
+      end *)
     | 0xFF06 -> m.tma
     | 0xFF07 -> m.tac
     | 0xFF4D -> m.key1
@@ -60,16 +60,7 @@ module Timer = struct
   let set m i v =
     match i with
     | 0xFF04 -> { m with div  = 0 }
-    | 0xFF05 ->
-      {
-        m with tima =
-        match v with
-        | 0b00 -> 256
-        | 0b01 -> 4
-        | 0b10 -> 16
-        | 0b11 -> 64
-        | _    -> assert false
-      }
+    | 0xFF05 -> { m with tima = v }
     | 0xFF06 -> { m with tma  = v }
     | 0xFF07 -> { m with tac  = v }
     | 0xFF4D -> { m with key1 = (m.key1 land 0x80) lor (v land 0x7F) }
@@ -77,7 +68,7 @@ module Timer = struct
 
   let reset_div m = { m with div = 0 }
 
-  let inc_div m = { m with div = m.div + 1 land 0xFF }
+  let inc_div m = { m with div = (m.div + 1) land 0xFF }
 
   let inc_tima m =
     let res = m.tima + 1 in
@@ -87,7 +78,12 @@ module Timer = struct
       { m with tima = res }, false
 
   let tac_enabled m = m.tac land 0b100 = 0b100
-  let tima_mcyc m = m.tima
+  let tima_mcyc m =
+    match m.tac land 0b11 with
+    | 0b00 -> 256
+    | 0b01 -> 4
+    | 0b10 -> 16
+    | 0b11 -> 64
   let mcyc_to_hz v double =
     if double then 1048576 / v else 2097152 / v
   let switch_speed m = { m with speed = not m.speed; key1 = m.key1 lxor 0x81 }
@@ -99,9 +95,9 @@ module Timer = struct
       | n -> aux (inc_div m) (n - 1)
     in
     let div_c = m.div_c + cycles in
-    let ticks = div_c / 64 in
+    let ticks = div_c / 256 in
     let m = aux m ticks in
-    { m with div_c = div_c mod 64 }
+    { m with div_c = div_c mod 256 }
 
   let run_tima m cycles =
     let rec aux (m,i) =
@@ -134,6 +130,11 @@ module Interrupts = struct
   let request_timer m  = m lor 0b00100
   let request_LCD m    = m lor 0b00010
   let request_VBlank m = m lor 0b00001
+  let handled_joypad m = m land 0b11101111
+  let handled_serial m = m land 0b11110111
+  let handled_timer m  = m land 0b11111011
+  let handled_LCD m    = m land 0b11111101
+  let handled_VBlank m = m land 0b11111110
   let in_range = (=) 0xFF0F
 end
 

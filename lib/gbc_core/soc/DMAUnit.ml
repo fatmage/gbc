@@ -12,7 +12,7 @@ module MakeOAM (State : State.S) : (S with type state = State.t) = struct
       match progress, n with
       | 160, _ -> { st with dma_oam = DMAState.OAM.set_state st.dma_oam Inactive }
       | progress, 0   -> { st with dma_oam = DMAState.OAM.set_state st.dma_oam @@ Active {src; progress} }
-      | progress, n   -> aux (State.set_v8 st (0xFE00 + progress) (State.get_v8 st (src + progress))) (DMAState.OAM.State.Active {src; progress = progress + 1}) (n - 1)
+      | progress, n   -> Utils.print_hex "Dma at" (0xFE00 + progress); aux (State.set_v8 st (0xFE00 + progress) (State.get_v8 st (src + progress))) (DMAState.OAM.State.Active {src; progress = progress + 1}) (n - 1)
     in
     match st.dma_oam.state with
     | Inactive -> st

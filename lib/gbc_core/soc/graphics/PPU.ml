@@ -125,9 +125,6 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let scan_oam (st : state) = sprite_buffer := State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly
 
-  (* TODO render_obj_line *)
-  (* We have all objects in sprite_buffer, we need to iter through the list
-     and write every obj to pixel_buffer like in obj and window *)
   let render_obj_line () =
     let draw_obj obj_prio ({ x_p; p1; p2 ; palette; prio } : obj_data) =
       let lx = ref (x_p - 8) in
@@ -157,40 +154,30 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     (* print_endline "przeszlo" *)
 
 
-  let rec loop () = loop ()
 
   let render_line (st : state) =
     let bgw_palette = State.GPUmem.Palettes.bgw_array st.gpu_mem.palettes in
     let obj_palette = State.GPUmem.Palettes.obj_array st.gpu_mem.palettes in
     let ly = st.gpu_mem.lcd_regs.ly in
-    (* print_string "renderujemy line: ";
-    print_endline (string_of_int ly); *)
     render_bgw_line st ly;
     begin
     if State.GPUmem.LCD_Regs.obj_enabled st.gpu_mem.lcd_regs then
-      (print_endline "dupa";
-      loop ();
-      render_obj_line ())
+      render_obj_line ()
     end;
     for i = 0 to screen_w -1 do
       match bgw_buffer.(i), obj_buffer.(i), State.GPUmem.LCD_Regs.bgwindow_ep st.gpu_mem.lcd_regs with
       (* No object pixel *)
       | { color = bwcolor; palette; _}, {color = -1; _}, _ ->
-        (* print_endline "No object pixel"; *)
         push_pixel ly i bgw_palette palette bwcolor
       (* Transparent object *)
       | { color = bwcolor; palette; _}, {color = 0; _}, _ ->
-        print_endline "Transparent pixel";
         push_pixel ly i bgw_palette palette bwcolor
       | _, {palette; color; _}, false
       | {prio = false; _}, {palette; color; prio = false; _}, true ->
-        print_endline "obj priority";
         push_pixel ly i obj_palette palette color
       | {color = 0; _}, {palette; color = objcolor; _}, true ->
-        print_endline "obj priority";
         push_pixel ly i obj_palette palette objcolor
       | {palette; color; _}, _, true ->
-        print_endline "bgw priority";
         push_pixel ly i bgw_palette palette color
     done;
     reset_sprite_buffer ()

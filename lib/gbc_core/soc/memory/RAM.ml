@@ -119,7 +119,7 @@ module WRAM = struct
 
   let in_range i = Bank0.in_range i || Banks.in_range i || i = 0xFF70
 
-  let in_echo i = 0xC000 <= i && i <= 0xDDFF
+  let in_echo i = 0xE000 <= i && i <= 0xFDFF
 
 end
 

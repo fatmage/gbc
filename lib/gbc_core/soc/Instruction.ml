@@ -646,7 +646,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let iJP_cn16 c n : instruction = fun st ->
     if check_condition st c
     then iJP_n16 n st
-    else st, Jump, 3
+    else st, Next, 3
 
   let iJR_n8 n : instruction = fun st ->
     State.adv_PC st (Utils.s8 n),
@@ -732,7 +732,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Next, 4
 
   let iPUSH_r16 r : instruction = fun st ->
-    State.dec_SP (State.set_SPp st (State.get_r16 st r)),
+    State.set_SPp (State.dec_SP st) (State.get_r16 st r),
     Next, 4
 
   (* Miscellaneous Instructions *)
@@ -828,6 +828,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Utils.value_hex (State.Bus.get8 st handler);
     Utils.value_hex (State.Bus.get8 st (handler + 1));
     Utils.value_hex (State.Bus.get8 st (handler + 2));
+    let st = { st with ime = Disabled } in
     State.set_PC (State.set_SPp (State.dec_SP st) (State.get_PC st)) handler,
     Jump, 5
 

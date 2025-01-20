@@ -284,6 +284,10 @@ module Make (State : State.S) : S = struct
     Utils.value_hex (State.Bus.get8 st (st.regs._PC + 2));
     Utils.print_hex "SP value" st.regs._SP;
     Utils.print_hex "Value at SP" @@ State.get_SPp st;
+    print_endline @@ "IME: " ^ (match st.ime with Enabled -> "enabled" | Disabled -> "disabled" | Enabling -> "enabling");
+    Utils.print_hex "IE" st.ie;
+    Utils.print_hex "IF" st.iflag;
+
 
     match State.Bus.get8 st st.regs._PC with
     | 0x00 -> Instruction.iNOP, 1
@@ -579,7 +583,8 @@ module Make (State : State.S) : S = struct
         in
         begin match addr with
         | 0 -> st, fetch_decode st
-        | n -> st, (Instruction.interrupt_service_routine n, 0)
+        | n -> Utils.print_hex "Servicujemy interrupt" n;
+        st, (Instruction.interrupt_service_routine n, 0)
         end
       | Enabling -> { st with ime = Enabled }, fetch_decode st
       | Disabled -> st, fetch_decode st

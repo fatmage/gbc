@@ -180,8 +180,11 @@ module Make (M : Palettes_intf) : S = struct
       | 2 -> t_index
       | 3 -> flags
     let set xs i v =
+      let i = i - 0xFE00 in
       let obj_i = i / 4 in
       let in_obj = i mod 4 in
+      Utils.print_dec "obj_i" obj_i;
+      Utils.print_dec "in_obj" in_obj;
       let rec aux xs i v acc =
         match xs, i with
         | x::xs, 0 ->
@@ -194,6 +197,7 @@ module Make (M : Palettes_intf) : S = struct
             end
           in (List.rev acc) @ (new_x :: xs)
         | x::xs, i -> aux xs (i - 1) v (x::acc)
+        | [], _ -> failwith "oam empty"
       in
       aux xs obj_i v []
 

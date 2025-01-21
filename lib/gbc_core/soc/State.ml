@@ -111,7 +111,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     *)
 
     let get8 st addr =
-      (* Utils.print_hex "Bus get8" addr; *)
+      Utils.print_hex "Bus get8" addr;
       match addr with
       | _ when Cartridge.in_range addr (* ROM + external RAM *)
         -> Cartridge.get st.cartridge addr
@@ -144,20 +144,24 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       (* BG/OBJ palettes *)
       (* WRAM bank select *)
       | _ when RAM.HRAM.in_range addr (* HRAM *)
-        ->  RAM.HRAM.get st.hram addr
+        ->  let v = RAM.HRAM.get st.hram addr in
+        Utils.print_hex "Value" v; v
       | _ when IE.in_range addr (* Interrupt Enable register *)
         -> IE.get st.ie addr
       | _ when DMAState.VRAM.in_range addr
         -> DMAState.VRAM.get st.dma_vram addr
       | _ when DMAState.OAM.in_range addr
         -> DMAState.OAM.get st.dma_oam addr
+      | _ when addr <= 0xFFFF
+        -> Utils.print_hex "Bus get warning: unusable memory" addr; 0xFF
       | _
-        -> Utils.fail_addr "Bus get error: address out of range." addr
+        -> Utils.fail_addr "Bus get error: address out of range" addr
 
 
     let set8 st addr v =
       Utils.print_hex "set8 addr" addr;
       Utils.print_hex "set8 value" v;
+      let st =
       match addr with
       | _ when Cartridge.in_range addr (* ROM + external cartridge *)
         -> { st with cartridge = Cartridge.set st.cartridge addr v }
@@ -197,8 +201,13 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
         -> { st with dma_vram = DMAState.VRAM.set st.dma_vram addr v }
       | _ when DMAState.OAM.in_range addr
         -> { st with dma_oam = DMAState.OAM.set st.dma_oam addr v }
+      | _ when addr <= 0xFFFF
+        -> Utils.print_hex "Bus set warning: unusable memory" addr; st
       | _
-        -> Utils.fail_addr "Bus set error: address out of range." addr
+        -> Utils.fail_addr "Bus set error: address out of range" addr
+      in
+      Utils.print_hex "Set result" @@ get8 st addr;
+      st
 
     let get16 st addr =
       (* if addr = 0xFF69 then get8 st addr else (* That's maybe how palletes work *) *)

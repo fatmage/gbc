@@ -31,7 +31,7 @@ let make_chunk size start : (module Addressable.S) =
         | Cap (v,_), 0 -> v
         | Cap (_,m), _ -> aux m
         | Node (i,l,v,r), index ->
-          if index == i then
+          if index = i then
           v else
           if index < i then
           aux l else
@@ -47,7 +47,7 @@ let make_chunk size start : (module Addressable.S) =
         | Cap (_,m), 0 -> Cap (v,m)
         | Cap (x,m), _ -> Cap (x, aux m)
         | Node (i,l,x,r), index ->
-          if index == i then
+          if index = i then
           Node (i,l,v,r) else
           if index < i then
           Node (i,aux l,x,r) else

@@ -107,8 +107,6 @@ module type S = sig
   (* Stack Operations Instructions *)
   val iADD_HLSP : instruction
   val iADD_SPe8 : int -> instruction
-  val iDEC_SP : instruction
-  val iINC_SP : instruction
   val iLD_SPn16 : int -> instruction
   val iLD_n16pSP : int -> instruction
   val iLD_HLSPe8 : int -> instruction
@@ -165,7 +163,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Next, 2
 
   let iADC_An8 n : instruction = fun st ->
-    let a, c = st.regs._A, State.get_flag st (Regs.Flag_c) in
+    let a, c = st.regs._A, State.get_flag st Regs.Flag_c in
     let sum = a + n + c in let res = Utils.u8 sum in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
     ~h:((a land 0xF) + (n land 0xF) + c > 0xF) ~c:(sum > 0xFF) (),
@@ -687,14 +685,6 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     State.set_flags (State.set_SP st res) ~z:false ~n:false
     ~h:((sp land 0xF) + (e land 0xF) > 0xF) ~c:((sp land 0xFF) + (e land 0xFF) > 0xFF) (),
     Next, 4
-
-  let iDEC_SP : instruction = fun st ->
-    State.dec_SP st,
-    Next, 2
-
-  let iINC_SP : instruction = fun st ->
-    State.inc_SP st,
-    Next, 2
 
   let iLD_SPn16 n : instruction = fun st ->
     State.set_SP st n,

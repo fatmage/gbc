@@ -283,10 +283,13 @@ module Make (State : State.S) : S = struct
     Utils.value_hex (State.Bus.get8 st (st.regs._PC + 1));
     Utils.value_hex (State.Bus.get8 st (st.regs._PC + 2));
     Utils.print_hex "SP value" st.regs._SP;
-    Utils.print_hex "Value at SP" @@ State.get_SPp st;
-    print_endline @@ "IME: " ^ (match st.ime with Enabled -> "enabled" | Disabled -> "disabled" | Enabling -> "enabling");
+    let _ = if st.regs._SP != 0xFFFF then
+    Utils.print_hex "Value at SP" @@ State.get_SPp st else () in
+    Utils.print_hex "HL value" st.regs._HL;
+    Utils.print_hex "Value at HL" @@ State.get_HLp st;
+    (* print_endline @@ "IME: " ^ (match st.ime with Enabled -> "enabled" | Disabled -> "disabled" | Enabling -> "enabling");
     Utils.print_hex "IE" st.ie;
-    Utils.print_hex "IF" st.iflag;
+    Utils.print_hex "IF" st.iflag; *)
 
 
     match State.Bus.get8 st st.regs._PC with
@@ -341,7 +344,7 @@ module Make (State : State.S) : S = struct
     | 0x30 -> let n8 = State.Bus.get8 st (st.regs._PC + 1) in Instruction.iJR_cn8 Cnc n8, 2
     | 0x31 -> let n16 = State.Bus.get16 st (st.regs._PC + 1) in Instruction.iLD_SPn16 n16, 3
     | 0x32 -> Instruction.iLD_HLDpA, 1
-    | 0x33 -> Instruction.iINC_SP, 1
+    | 0x33 -> Instruction.iINC_r16 SP, 1
     | 0x34 -> Instruction.iINC_HLp, 1
     | 0x35 -> Instruction.iDEC_HLp, 1
     | 0x36 -> let n8 = State.Bus.get8 st (st.regs._PC + 1) in Instruction.iLD_HLpn8 n8, 2
@@ -349,7 +352,7 @@ module Make (State : State.S) : S = struct
     | 0x38 -> let n8 = State.Bus.get8 st (st.regs._PC + 1) in Instruction.iJR_cn8 Cc n8, 2
     | 0x39 -> Instruction.iADD_HLSP, 1
     | 0x3A -> Instruction.iLD_AHLDp, 1
-    | 0x3B -> Instruction.iDEC_SP, 1
+    | 0x3B -> Instruction.iDEC_r16 SP, 1
     | 0x3C -> Instruction.iINC_r8 A, 1
     | 0x3D -> Instruction.iDEC_r8 A, 1
     | 0x3E -> let n8 = State.Bus.get8 st (st.regs._PC + 1) in Instruction.iLD_rn8 A n8, 2
@@ -650,7 +653,7 @@ module Make (State : State.S) : S = struct
       (* w "mainie" bedizemy dodawac st ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
     | Halted _ ->
       (* check for interrupt *)
-      Utils.print_hex "Halted loop PC state" st.regs._PC;
+      (* Utils.print_hex "Halted loop PC state" st.regs._PC; *)
       let st, mc = poll_interrupts_halted st in
       (* timer *)
       (* run div *)

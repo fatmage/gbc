@@ -46,25 +46,37 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let render_bgw_line (st : state)  ly =
     let render_bg_line (st : state) ly tile_data_area =
+      Utils.print_dec "=============================RENDERING====================================" ly;
       let scy, scx = st.gpu_mem.lcd_regs.scy, st.gpu_mem.lcd_regs.scx in
       let y = (scy + ly) mod bg_wh in
+      Utils.print_dec "Y" y;
+      Utils.print_dec "SCY" scy;
+      Utils.print_dec "LY" ly;
       let bg_tile_map_area = State.GPUmem.LCD_Regs.bg_tm_area st.gpu_mem.lcd_regs in
       let row_in_tile = y mod 8 in
       let lx = ref 0 in
+      let cnt = ref 0 in
       while !lx < screen_w do
+        Utils.print_dec "Tile n" !cnt;
+        cnt := !cnt + 1;
         let x = (scx + !lx) mod bg_wh in
         let col_in_tile = x mod 8 in
+        Utils.print_hex "Tile y" y;
+        Utils.print_hex "Tile x" x;
         let tile_index = State.GPUmem.VRAM.get_tile_index st.gpu_mem.vram bg_tile_map_area y x in
+        Utils.print_hex "Tile_index" tile_index;
         let tile_attr = State.GPUmem.VRAM.get_tile_attributes st.gpu_mem.vram bg_tile_map_area y x in
+        Utils.print_hex "Tile attributes" tile_attr;
         let prio = tile_attr land 0x80 > 0 in
         let y_flip = tile_attr land 0x40 > 0 in
         let x_flip = tile_attr land 0x20 > 0 in
         let bank = tile_attr land 0x08 lsr 3 in
         let palette = tile_attr land 0x07 in
-        let row_in_tile = if y_flip then 8 - row_in_tile else row_in_tile in
+        Utils.print_dec "Palette" palette;
+        let row_in_tile = if y_flip then 7 - row_in_tile else row_in_tile in
         let p1, p2 = State.GPUmem.VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_index row_in_tile bank in
-        let p1 = if x_flip then ref (Utils.rev_u8 p1) else ref p1 in
-        let p2 = if x_flip then ref (Utils.rev_u8 p2) else ref p2 in
+        let p1 = if x_flip then ref p1 else ref (Utils.rev_u8 p1) in
+        let p2 = if x_flip then ref p2 else ref (Utils.rev_u8 p2) in
         let len =
           if col_in_tile > 0 then
             8 - col_in_tile
@@ -102,8 +114,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           let palette = tile_attr land 0x07 in
           let row_in_tile = if y_flip then 8 - row_in_tile else row_in_tile in
           let p1, p2 = State.GPUmem.VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_index row_in_tile bank in
-          let p1 = if x_flip then ref (Utils.rev_u8 p1) else ref p1 in
-          let p2 = if x_flip then ref (Utils.rev_u8 p2) else ref p2 in
+          let p1 = if x_flip then ref p1 else ref (Utils.rev_u8 p1) in
+          let p2 = if x_flip then ref p2 else ref (Utils.rev_u8 p2) in
           let len = if screen_w - !lx < 8 then screen_w - !lx else 8 in
           for i = 0 to len - 1 do
             let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
@@ -125,7 +137,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let scan_oam (st : state) = sprite_buffer := State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly
 
-  let render_obj_line () =
+  (* let render_obj_line () =
     let draw_obj obj_prio ({ x_p; p1; p2 ; palette; prio } : obj_data) =
       let lx = ref (x_p - 8) in
       let p1 = ref p1 in
@@ -140,7 +152,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
         p2 := !p2 lsr 1;
       done
     in
-    List.iteri draw_obj !sprite_buffer
+    List.iteri draw_obj !sprite_buffer *)
 
   let push_pixel y x arr palette color =
     (* print_endline "push pixel";
@@ -149,6 +161,9 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Utils.print_dec "palette" palette;
     Utils.print_dec "color" color; *)
     let v = State.GPUmem.Palettes.lookup_arr arr palette color in
+    let _ = if v = 3 then
+      Utils.print_dec "Palette used" v
+    else () in
     (* Utils.print_dec "Pixel rgb" v; *)
     framebuffer.(y).(x) <- v
     (* print_endline "przeszlo" *)
@@ -162,7 +177,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     render_bgw_line st ly;
     begin
     if State.GPUmem.LCD_Regs.obj_enabled st.gpu_mem.lcd_regs then
-      render_obj_line ()
+      (* render_obj_line () *)()
     end;
     for i = 0 to screen_w -1 do
       match bgw_buffer.(i), obj_buffer.(i), State.GPUmem.LCD_Regs.bgwindow_ep st.gpu_mem.lcd_regs with

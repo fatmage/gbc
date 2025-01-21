@@ -19,7 +19,7 @@ let init_graphics () =
   Sdl.create_renderer window ~index:(-1) |> or_exit
 
 let create_texture renderer =
-  Sdl.create_texture renderer Sdl.Pixel.format_rgb555
+  Sdl.create_texture renderer Sdl.Pixel.format_rgba5551
   Sdl.Texture.access_streaming ~w:gbc_w ~h:gbc_h
   |> or_exit
 

@@ -110,3 +110,12 @@ let print_flags {z;n;h;c;low_nibble} =
     "z:" ^ (string_of_bool z) ^ " n:" ^ (string_of_bool n) ^
     " h:" ^ (string_of_bool h) ^ " c:" ^ (string_of_bool c) ^
     " low: " ^ (Printf.sprintf "0x%02X" low_nibble)
+
+
+let print_registers regs =
+  Utils.print_hex "AF" @@ get_r16 regs AF;
+  Utils.print_hex "BC" @@ get_r16 regs BC;
+  Utils.print_hex "DE" @@ get_r16 regs DE;
+  Utils.print_hex "HL" @@ get_r16 regs HL;
+  Utils.print_hex "SP" @@ get_r16 regs SP;
+  Utils.print_hex "PC" @@ get_r16 regs PC

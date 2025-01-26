@@ -8,6 +8,10 @@ module type S = sig
 
   val init_gb : bytes -> State.t
 
+  val print_registers : State.t -> unit
+  val print_interrupts : State.t -> unit
+  val print_palettes : State.t -> unit
+
 end
 
 module Make (State : State.S) : S = struct
@@ -282,15 +286,14 @@ module Make (State : State.S) : S = struct
     Utils.value_hex (State.Bus.get8 st st.regs._PC);
     Utils.value_hex (State.Bus.get8 st (st.regs._PC + 1));
     Utils.value_hex (State.Bus.get8 st (st.regs._PC + 2));
-    Utils.print_hex "SP value" st.regs._SP;
+    State.print_registers st;
+    State.print_interrupts st;
+    Utils.print_hex "LCDC" st.gpu_mem.lcd_regs.lcdc;
+    Utils.print_hex "STAT" st.gpu_mem.lcd_regs.stat;
     let _ = if st.regs._SP != 0xFFFF then
     Utils.print_hex "Value at SP" @@ State.get_SPp st else () in
-    Utils.print_hex "HL value" st.regs._HL;
     Utils.print_hex "Value at HL" @@ State.get_HLp st;
-    (* print_endline @@ "IME: " ^ (match st.ime with Enabled -> "enabled" | Disabled -> "disabled" | Enabling -> "enabling");
-    Utils.print_hex "IE" st.ie;
-    Utils.print_hex "IF" st.iflag; *)
-
+    (* let _ = if st.regs._PC = 0x0238 then read_line () else "" in *)
 
     match State.Bus.get8 st st.regs._PC with
     | 0x00 -> Instruction.iNOP, 1
@@ -576,7 +579,7 @@ module Make (State : State.S) : S = struct
       match st.ime with
       | Enabled  ->
         let st, addr =
-          match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
+          match first_set_bit @@ (IOregs.IE.get st.ie 0xFFFF) land (IOregs.Interrupts.get st.iflag 0xFF0F) with
           | 1 -> { st with iflag = IOregs.Interrupts.handled_VBlank st.iflag }, 0x40 (* VBlank *)
           | 2 -> { st with iflag = IOregs.Interrupts.handled_LCD st.iflag }, 0x48 (* LCD *)
           | 3 -> { st with iflag = IOregs.Interrupts.handled_timer st.iflag }, 0x50 (* Timer *)
@@ -595,26 +598,32 @@ module Make (State : State.S) : S = struct
     execute instr st length
 
   let poll_interrupts_halted (st : State.t) =
+    print_endline "pollujemy interrupty";
+    Utils.print_hex "LCDC" st.gpu_mem.lcd_regs.lcdc;
+    Utils.print_hex "STAT" st.gpu_mem.lcd_regs.stat;
+    Utils.print_hex "LY" st.gpu_mem.lcd_regs.ly;
+    Utils.print_hex "LYC" st.gpu_mem.lcd_regs.lyc;
+    State.print_interrupts st;
     let st, addr, (act : State.cpu_activity) =
       match st.ime with
       | Enabled ->
-          begin match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
-          | 1 -> { st with activity = Running }, 0x40, Running
-          | 2 -> { st with activity = Running }, 0x48, Running
-          | 3 -> { st with activity = Running }, 0x50, Running
-          | 4 -> { st with activity = Running }, 0x58, Running
-          | 5 -> { st with activity = Running }, 0x60, Running
+          begin match first_set_bit @@ (IOregs.IE.get st.ie 0xFFFF) land (IOregs.Interrupts.get st.iflag 0xFF0F) with
+          | 1 -> { st with activity = Running; iflag = IOregs.Interrupts.handled_VBlank st.iflag }, 0x40, Running
+          | 2 -> { st with activity = Running; iflag = IOregs.Interrupts.handled_LCD st.iflag    }, 0x48, Running
+          | 3 -> { st with activity = Running; iflag = IOregs.Interrupts.handled_timer st.iflag  }, 0x50, Running
+          | 4 -> { st with activity = Running; iflag = IOregs.Interrupts.handled_serial st.iflag }, 0x58, Running
+          | 5 -> { st with activity = Running; iflag = IOregs.Interrupts.handled_joypad st.iflag }, 0x60, Running
           | _ -> st, 0x00, st.activity
           end
       | Disabled ->
-          begin match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
+          begin match first_set_bit @@ (IOregs.IE.get st.ie 0xFFFF) land (IOregs.Interrupts.get st.iflag 0xFF0F) with
           | 1 | 2 | 3 | 4 | 5 -> { st with activity = Running }, 0x00, Running
           | _ -> st, 0x00, st.activity
           end
       | Enabling ->
-          begin match IOregs.IE.get st.ie 0xFFFF land IOregs.Interrupts.get st.iflag 0xFF0F |> first_set_bit with
+          begin match first_set_bit @@ (IOregs.IE.get st.ie 0xFFFF) land (IOregs.Interrupts.get st.iflag 0xFF0F) with
           | 1 | 2 | 3 | 4 | 5 -> { st with activity = Running }, 0x00, Running
-          | _ -> st, 0x00, st.activity
+          | _ ->  { st with ime = Enabled }, 0x00, st.activity
           end
     in
     match act, addr with
@@ -674,7 +683,7 @@ module Make (State : State.S) : S = struct
       let st, render = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
       st, State.mc_to_time st mc, render
     | Stopped ->
-      if (IOregs.Joypad.get st.joypad 0) land 0x0F != 0x0F then
+      if ((IOregs.Joypad.get st.joypad 0) land 0x0F) != 0x0F then
         { st with activity = Running }, 0., false
       else
         st, 0., false
@@ -683,6 +692,10 @@ module Make (State : State.S) : S = struct
   let init_gb rom =
     let initial_state = State.load_rom (State.init_cgb State.initial) rom in
     initial_state
+
+  let print_registers = State.print_registers
+  let print_interrupts = State.print_interrupts
+  let print_palettes = State.print_palettes
 
 
 end

@@ -28,7 +28,12 @@ let render_framebuffer texture renderer framebuffer =
     for y = 0 to gbc_h - 1 do
       for x = 0 to gbc_w -1 do
         let index = (y * gbc_w) + x in
-        pixels.{index} <- framebuffer.(y).(x)
+        pixels.{index} <- framebuffer.(y).(x) lor 0x0080;
+        if y = 5 && x = 122 then
+          let _ = print_endline "PRAWDZIWY KOLOR" in
+          let _ = print_int @@ framebuffer.(y).(x) lor 0x0080 in
+          let _ = read_line () in ()
+
       done
     done
   in

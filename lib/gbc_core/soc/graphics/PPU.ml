@@ -42,7 +42,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let reset_sprite_buffer () = sprite_buffer := []
 
   let dot_of_mc mcycles speed =
-    if speed then mcycles * 4 else mcycles * 2
+    if speed then mcycles * 2 else mcycles * 4
 
   let render_bgw_line (st : state)  ly =
     let render_bg_line (st : state) ly tile_data_area =
@@ -73,10 +73,12 @@ module Make (State : State.S) : (S with type state = State.t) = struct
         let bank = tile_attr land 0x08 lsr 3 in
         let palette = tile_attr land 0x07 in
         Utils.print_dec "Palette" palette;
+        Utils.print_dec "Bank" bank;
         let row_in_tile = if y_flip then 7 - row_in_tile else row_in_tile in
         let p1, p2 = State.GPUmem.VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_index row_in_tile bank in
         let p1 = if x_flip then ref p1 else ref (Utils.rev_u8 p1) in
         let p2 = if x_flip then ref p2 else ref (Utils.rev_u8 p2) in
+        if palette = 4 then State.print_palettes st else ();
         let len =
           if col_in_tile > 0 then
             8 - col_in_tile
@@ -89,15 +91,18 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
           p1 := !p1 lsr 1;
           p2 := !p2 lsr 1;
-          (* Utils.print_dec "piszemy do bg_buffer" (!lx + i); *)
+          Utils.print_dec "piszemy do bg_buffer" (!lx + i);
+          Utils.print_hex "color" color;
           bgw_buffer.(!lx + i) <- (mk_pixel color palette 0 prio)
         done;
+
+        (* let _ = if ly = 5 then let _ = State.print_palettes st  in read_line () else "" in *)
         lx := !lx + len
       done
     in
     let render_w_line (st : state) ly tile_data_area =
       let wy = st.gpu_mem.lcd_regs.wy in
-      let wx = st.gpu_mem.lcd_regs.wx in
+      let wx = st.gpu_mem.lcd_regs.wx - 7 in
       if wy <= ly && ly <= wy + window_wh && wx <= screen_w then
         let window_tile_map_area = State.GPUmem.LCD_Regs.window_tm_area st.gpu_mem.lcd_regs in
         let y_in_w = Int.abs (ly - wy) in
@@ -122,6 +127,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
             p1 := !p1 lsr 1;
             p2 := !p2 lsr 1;
             Utils.print_dec "piszemy do w_buffer" (!lx + i);
+            (* let _ = read_line () in *)
             bgw_buffer.(!lx + i) <- (mk_pixel color palette 0 prio)
           done;
           lx := !lx + len
@@ -130,16 +136,17 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     let tile_data_area = State.GPUmem.LCD_Regs.bw_base_pointer st.gpu_mem.lcd_regs in
     render_bg_line st ly tile_data_area;
     if State.GPUmem.LCD_Regs.window_enabled st.gpu_mem.lcd_regs then
-      render_w_line st ly tile_data_area
+      (* render_w_line st ly tile_data_area *)
+      ()
 
 
 
 
   let scan_oam (st : state) = sprite_buffer := State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly
 
-  (* let render_obj_line () =
+  let render_obj_line () =
     let draw_obj obj_prio ({ x_p; p1; p2 ; palette; prio } : obj_data) =
-      let lx = ref (x_p - 8) in
+      let lx = ref (x_p - 7) in
       let p1 = ref p1 in
       let p2 = ref p2 in
       for _ = 0 to 7 do
@@ -152,7 +159,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
         p2 := !p2 lsr 1;
       done
     in
-    List.iteri draw_obj !sprite_buffer *)
+    List.iteri draw_obj !sprite_buffer
 
   let push_pixel y x arr palette color =
     (* print_endline "push pixel";
@@ -161,10 +168,11 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Utils.print_dec "palette" palette;
     Utils.print_dec "color" color; *)
     let v = State.GPUmem.Palettes.lookup_arr arr palette color in
-    let _ = if v = 3 then
-      Utils.print_dec "Palette used" v
-    else () in
-    (* Utils.print_dec "Pixel rgb" v; *)
+
+    Utils.print_dec "x" x;
+    Utils.print_hex "Pixel rgb" v;
+    (* if y = 5 && (x >= 120 && x <= 127) then let _ = read_line () in () else (); *)
+
     framebuffer.(y).(x) <- v
     (* print_endline "przeszlo" *)
 
@@ -177,9 +185,10 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     render_bgw_line st ly;
     begin
     if State.GPUmem.LCD_Regs.obj_enabled st.gpu_mem.lcd_regs then
-      (* render_obj_line () *)()
+      (* render_obj_line () *)
+      ()
     end;
-    for i = 0 to screen_w -1 do
+    for i = 0 to screen_w - 1 do
       match bgw_buffer.(i), obj_buffer.(i), State.GPUmem.LCD_Regs.bgwindow_ep st.gpu_mem.lcd_regs with
       (* No object pixel *)
       | { color = bwcolor; palette; _}, {color = -1; _}, _ ->
@@ -198,8 +207,6 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     reset_sprite_buffer ()
 
 
-
-
   let check_ly_lyc (st : state) =
     let lcd_regs, interrupt = State.GPUmem.LCD_Regs.cmp_lyc st.gpu_mem.lcd_regs in
     let st = { st with gpu_mem = { st.gpu_mem with lcd_regs } } in
@@ -209,47 +216,49 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       st
 
   let process_ppu (st : state) dots =
-    match State.GPUmem.get_mode st.gpu_mem with
-    | GPUmode.HBlank (c, m)         ->
-      let new_c = c + dots in
-      if new_c >= m then
-        let st = st |> State.inc_ly |> check_ly_lyc in
-        if st.gpu_mem.lcd_regs.ly < screen_h then
-          let st = if State.GPUmem.LCD_Regs.mode2_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
-          State.change_mode st @@ OAM_scan (new_c - m), false
+    if not @@ State.GPUmem.LCD_Regs.lcd_enabled st.gpu_mem.lcd_regs then
+      st, false
+    else
+      match State.GPUmem.get_mode st.gpu_mem with
+      | GPUmode.HBlank (c, m)         ->
+        let new_c = c + dots in
+        if new_c >= m then
+          let st = st |> State.inc_ly |> check_ly_lyc in
+          if st.gpu_mem.lcd_regs.ly < screen_h then
+            let st = if State.GPUmem.LCD_Regs.mode2_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
+            State.change_mode st @@ OAM_scan (new_c - m), false
+          else
+            let st = if State.GPUmem.LCD_Regs.mode1_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
+            let st = State.request_VBlank st in
+            State.change_mode st @@ VBlank (new_c - m), false
         else
-          let st = if State.GPUmem.LCD_Regs.mode1_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
-          let st = State.request_VBlank st in
-          State.change_mode st @@ VBlank (new_c - m), false
-      else
-        State.update_mode st @@ HBlank (new_c, m), false
-    | GPUmode.VBlank c       ->
-      let new_c = c + dots in
-      if new_c >= line_duration then
-        let st = st |> State.inc_ly |> check_ly_lyc in
-        if State.get_ly st < screen_h + 10 then
-          State.update_mode st @@ VBlank (new_c - line_duration), false
+          State.update_mode st @@ HBlank (new_c, m), false
+      | GPUmode.VBlank c       ->
+        let new_c = c + dots in
+        if new_c >= line_duration then
+          let st = st |> State.inc_ly |> check_ly_lyc in
+          if State.get_ly st < screen_h + 10 then
+            State.update_mode st @@ VBlank (new_c - line_duration), false
+          else
+            let st = st |> State.reset_ly |> check_ly_lyc in
+            let st = if State.GPUmem.LCD_Regs.mode2_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
+            print_endline "VBLANK";
+            State.change_mode st @@ OAM_scan (new_c - line_duration), true
         else
-          let st = st |> State.reset_ly |> check_ly_lyc in
-          let st = if State.GPUmem.LCD_Regs.mode2_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
-          print_endline "VBLANK";
-          State.change_mode st @@ OAM_scan (new_c - line_duration), true
-      else
-        State.update_mode st @@ VBlank new_c, false
-    | GPUmode.OAM_scan c    ->
-      let new_c = c + dots in
-      if new_c >= 80 then
-        let _ = scan_oam st in
-        State.change_mode st @@ Drawing_pixels (new_c - 80, 172), false
-      else
-        State.update_mode st @@ OAM_scan new_c, false
-    | GPUmode.Drawing_pixels (c, m) ->
-      let new_c = c + dots in
-      if new_c >= m then
-        let _ = render_line st in
-        let st = if State.GPUmem.LCD_Regs.mode0_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
-        State.change_mode st @@ HBlank (new_c, 204), false
-      else
-        State.update_mode st @@ Drawing_pixels (new_c, m), false
-
+          State.update_mode st @@ VBlank new_c, false
+      | GPUmode.OAM_scan c    ->
+        let new_c = c + dots in
+        if new_c >= 80 then
+          let _ = scan_oam st in
+          State.change_mode st @@ Drawing_pixels (new_c - 80, 172), false
+        else
+          State.update_mode st @@ OAM_scan new_c, false
+      | GPUmode.Drawing_pixels (c, m) ->
+        let new_c = c + dots in
+        if new_c >= m then
+          let _ = render_line st in
+          let st = if State.GPUmem.LCD_Regs.mode0_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
+          State.change_mode st @@ HBlank (new_c, 204), false
+        else
+          State.update_mode st @@ Drawing_pixels (new_c, m), false
 end

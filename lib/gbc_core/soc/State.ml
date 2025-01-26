@@ -15,7 +15,8 @@ module type S = sig
     regs: Regs.regfile; wram : RAM.WRAM.t; gpu_mem : GPUmem.t;
     hram : RAM.HRAM.t; joypad : Joypad.t; serial: Serial.t;
     timer: Timer.t; iflag : Interrupts.t; audio : Audio.t;
-    wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
+    wave : WavePattern.t; ie: IE.t; ime : interrupts;
+    activity : cpu_activity;
     dma_oam : DMAState.OAM.t; dma_vram : DMAState.VRAM.t
   }
 
@@ -70,6 +71,12 @@ module type S = sig
   val init_cgb : t -> t
   val mc_to_time : t -> int -> float
 
+  (* Debugging functions *)
+
+  val print_registers : t -> unit
+  val print_interrupts : t -> unit
+  val print_palettes : t -> unit
+
 end
 
 
@@ -111,7 +118,6 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     *)
 
     let get8 st addr =
-      Utils.print_hex "Bus get8" addr;
       match addr with
       | _ when Cartridge.in_range addr (* ROM + external RAM *)
         -> Cartridge.get st.cartridge addr
@@ -144,8 +150,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       (* BG/OBJ palettes *)
       (* WRAM bank select *)
       | _ when RAM.HRAM.in_range addr (* HRAM *)
-        ->  let v = RAM.HRAM.get st.hram addr in
-        Utils.print_hex "Value" v; v
+        -> RAM.HRAM.get st.hram addr
       | _ when IE.in_range addr (* Interrupt Enable register *)
         -> IE.get st.ie addr
       | _ when DMAState.VRAM.in_range addr
@@ -159,8 +164,6 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
 
 
     let set8 st addr v =
-      Utils.print_hex "set8 addr" addr;
-      Utils.print_hex "set8 value" v;
       let st =
       match addr with
       | _ when Cartridge.in_range addr (* ROM + external cartridge *)
@@ -206,13 +209,12 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       | _
         -> Utils.fail_addr "Bus set error: address out of range" addr
       in
-      Utils.print_hex "Set result" @@ get8 st addr;
       st
 
     let get16 st addr =
       (* if addr = 0xFF69 then get8 st addr else (* That's maybe how palletes work *) *)
       let lo, hi = get8 st addr, get8 st (addr + 1) in
-      hi lsl 8 lor lo
+      (hi lsl 8) lor lo
 
     let set16 st addr v =
       let hi, lo = (v land 0xFF00) lsr 8, v land 0xFF in
@@ -300,4 +302,18 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     }
 
   let mc_to_time st mc = (float_of_int mc) *. (Timer.tmul st.timer)
+
+  let print_registers st =
+    print_endline "Registers:";
+    Regs.print_registers st.regs
+
+  let print_interrupts st =
+    print_endline "Interrupts";
+    print_endline @@ "IME: " ^ (match st.ime with | Disabled -> "Disabled" | Enabled -> "Enabled" | Enabling -> "Enabling");
+    Utils.print_hex "Iflag" st.iflag;
+    Utils.print_hex "IE" st.ie
+
+  let print_palettes st =
+    GPUmem.Palettes.print_palettes st.gpu_mem.palettes;
+
 end

@@ -9,6 +9,8 @@ module type Palettes_intf = sig
 
   val lookup_arr : int array -> int -> int -> int
 
+  val print_palettes : t -> unit
+
 end
 
 
@@ -123,29 +125,31 @@ module Palettes_CGB : Palettes_intf = struct
 
   let set m i v =
     Utils.print_hex "Piszemy do palettes" v;
-    match i with
+    let r = match i with
     | 0xFF47 -> { m with bgp  = v }
     | 0xFF48 -> { m with obp0 = v }
     | 0xFF49 -> { m with obp1 = v }
     | 0xFF68 -> { m with bcps = v }
     | 0xFF69 ->
       let addr = m.bcps land 0x3F in
-      let m = if m.bcps land 0x80 > 0 then { m with bcps = (m.bcps land 0x80) lor ((addr + 1) land 0x3F) } else m in
+      let m = if m.bcps land 0x80 > 0 then { m with bcps = (m.bcps land 0xC0) lor ((addr + 1) land 0x3F) } else m in
       let bgw_cram = List.mapi (fun i ei -> if i = addr then v else ei) m.bgw_cram in
-      Utils.print_hex "Palette changed" addr;
+      Utils.print_dec "Palette changed" addr;
       (* let _ = if i = 0xff69 then List.iteri (fun i v -> Utils.print_dec "Palette addr" i; Utils.print_hex "Palette val" v) bgw_cram else () in *)
-      (* let _ = read_line () in *)
+      (* let _ = if addr >= 32 && addr <= 39 then read_line () else "" in *)
       { m with bgw_cram }
     | 0xFF6A -> { m with ocps = v }
     | 0xFF6B ->
       let addr = m.ocps land 0x3F in
-      let m = if m.ocps land 0x80 > 0 then { m with ocps = m.ocps + 1 land 0x3F } else m in
+      let m = if m.ocps land 0x80 > 0 then { m with ocps = (m.ocps land 0xC0) lor ((addr + 1) land 0x3F) } else m in
       let obj_cram = List.mapi (fun i ei -> if i = addr then v else ei) m.obj_cram in
-      { m with obj_cram }
+      { m with obj_cram } in
+      r
+
 
   let rec nth_2 xs i =
     match xs,i with
-    | l::h::_, 0 -> l lsl 8 lor h
+    | l::h::_, 0 -> (l lsl 8) lor h
     | _::xs, i -> nth_2 xs (i-1)
   let lookup_bgw m palette color = nth_2 m.bgw_cram (palette * 8 + (color * 2))
 
@@ -155,7 +159,19 @@ module Palettes_CGB : Palettes_intf = struct
   let lookup_arr arr palette color =
     let l = arr.(palette * 8 + (color * 2)) in
     let h = arr.(palette * 8 + (color * 2) + 1) in
-    l lsl 8 lor h
+    (l lsl 8) lor h
+
+  let print_palettes palettes =
+    let bgw_arr = bgw_array palettes in
+    let obj_arr = obj_array palettes in
+    print_endline "Palettes";
+    for i = 0 to 7 do
+      Utils.print_dec "palette" i;
+      for j = 0 to 3 do
+        Utils.print_hex "color" (lookup_arr bgw_arr i j)
+      done;
+    done
+
 
   let in_range i = (0xFF47 <= i && i <= 0xFF48) || (0xFF68 <= i && i <= 0xFF6B)
 end
@@ -288,10 +304,14 @@ module Make (M : Palettes_intf) : S = struct
         | 1 -> b1
       in
       match area with
-      | 0x8000 -> (Bank.get bank (0x8000 + index * 16 + row * 2)), (Bank.get bank (0x8000 + index * 16 + row * 2 + 1))
+      | 0x8000 -> let addr = (0x8000 + (index * 16) + (row * 2)) in
+        Utils.print_hex "Tile addr" (addr - row * 2);
+        Bank.get bank addr, Bank.get bank (addr + 1)
       | 0x9000 ->
-        let s_index = (index land 0x7F) - (index land 0x80) in
-        (Bank.get bank (0x9000 + s_index * 16 + row * 2)), (Bank.get bank (0x9000 + s_index * 16 + row * 2 + 1))
+        let s_index = Utils.s8 index in
+        let addr = (0x9000 + (s_index * 16) + (row * 2)) in
+        Utils.print_hex "Tile addr" (addr - row * 2);
+        Bank.get bank addr, Bank.get bank (addr + 1)
 
     let get_obj_tile_data_row (b1, b2, b) index size row chosen_bank =
       let bank =
@@ -364,7 +384,7 @@ module Make (M : Palettes_intf) : S = struct
     let mode0_cond { stat; _ } = stat land 0x08 > 0
     let lyc_ly_eq { stat; _ } = stat land 0x04 > 0
     let get_mode { stat; _ } = stat land 0x03 |> GPUmode.of_int
-    let set_mode m mode = match m with  { stat; _ } -> { m with stat = (stat land 0xF8) lor mode }
+    let set_mode m mode = match m with  { stat; _ } -> { m with stat = (stat land 0xFC) lor mode }
 
 
     let inc_ly m =
@@ -374,12 +394,12 @@ module Make (M : Palettes_intf) : S = struct
       if m.ly = m.lyc then
         { m with stat = m.stat lor 0x04 }, true
       else
-        { m with stat = m.stat land 0xBF }, false
+        { m with stat = m.stat land 0xFB }, false
     let in_range i = (0xFF40 <= i && i <= 0xFF45) || i = 0xFF4A || i = 0xFF4B
   end
 
   type t = { mode : GPUmode.t; vram : VRAM.t; oam : OAM.t; lcd_regs : LCD_Regs.t; palettes : Palettes.t }
-  let initial = { mode = OAM_scan 0; vram = VRAM.initial; oam = OAM.initial; lcd_regs = LCD_Regs.initial; palettes = Palettes.initial }
+  let initial = { mode = VBlank 0; vram = VRAM.initial; oam = OAM.initial; lcd_regs = LCD_Regs.initial; palettes = Palettes.initial }
   let get t =
     function
     | i when VRAM.in_range i -> VRAM.get t.vram i

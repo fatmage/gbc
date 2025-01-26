@@ -81,8 +81,8 @@ let mbc1 rom_banks ram_banks : (module S) = (module struct
     match m.mode with
     | M0 -> 0
     | M1 when rom_banks <= 32 -> 0
-    | M1 when rom_banks = 64 -> m.ram_bank land 0b1 lsl 5
-    | M1 when rom_banks = 128 -> m.ram_bank land 0b11 lsl 5
+    | M1 when rom_banks = 64 -> (m.ram_bank land 0b1) lsl 5
+    | M1 when rom_banks = 128 -> (m.ram_bank land 0b11) lsl 5
 
   let addr_low m i = 0x4000 * (bank_low m) + i
 
@@ -90,10 +90,10 @@ let mbc1 rom_banks ram_banks : (module S) = (module struct
     match rom_banks with
     | n when n <= 32 -> m.rom_bank
     | n when n = 64 ->
-      let b5 = m.ram_bank land 0b1 lsl 5 in
+      let b5 = (m.ram_bank land 0b1) lsl 5 in
       b5 lor m.rom_bank
     | n when n = 128 ->
-      let b56 = m.ram_bank land 0b11 lsl 5 in
+      let b56 = (m.ram_bank land 0b11) lsl 5 in
       b56 lor m.rom_bank
 
   let addr_high m i = 0x4000 * (bank_high m) + i - 0x4000
@@ -239,9 +239,9 @@ let mbc5 ram_banks : (module S) = (module struct
       | _    -> { m with ram_enabled = false }
       end
     | _ when 0x2000 <= i && i <= 0x2FFF ->
-      { m with rom_bank = m.rom_bank land (lnot 0xFF) lor v }
+      { m with rom_bank = (m.rom_bank land (lnot 0xFF)) lor v }
     | _ when 0x3000 <= i && i <= 0x3FFF ->
-      { m with rom_bank = m.rom_bank land 0xFF lor (v land 0b1 lsl 8) }
+      { m with rom_bank = (m.rom_bank land 0xFF) lor (v land 0b1 lsl 8) }
     | _ when 0x4000 <= i && i <= 0x5FFF ->
       { m with ram_bank = v land 0x0F }
     | _ when in_ram i ->

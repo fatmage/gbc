@@ -109,7 +109,7 @@ module WRAM = struct
       if v land 0b111 = svbk land 0b111 then
         { m with svbk=v }
       else
-        let diff = svbk land 0b111 - v land 0b111 in
+        let diff = (svbk land 0b111) - (v land 0b111) in
         { b0; bs = rot bs diff; svbk=v }
     | {b0;_}, i when Bank0.in_range i ->
       { m with b0 = Bank0.set b0 i v }

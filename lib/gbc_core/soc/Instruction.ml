@@ -280,21 +280,21 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     let a, x, c = st.regs._A, State.get_r8 st r, State.get_flag st Flag_c in
     let sub = a - x - c in let res = if sub < 0 then 0x100 + sub else sub in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
-    ~h:(a land 0xF < x land 0xF + c) ~c:(sub < 0) (),
+    ~h:(a land 0xF < (x land 0xF) + c) ~c:(sub < 0) (),
     Next, 1
 
   let iSBC_AHLp : instruction = fun st ->
     let a, hlp, c = st.regs._A, State.get_HLp st, State.get_flag st Flag_c in
     let sub = a - hlp - c in let res = if sub < 0 then 0x100 + sub else sub in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
-    ~h:(a land 0xF < hlp land 0xF + c) ~c:(sub < 0) (),
+    ~h:(a land 0xF < (hlp land 0xF) + c) ~c:(sub < 0) (),
     Next, 2
 
   let iSBC_An8 n : instruction = fun st ->
     let a, c = st.regs._A, State.get_flag st Flag_c in
     let sub = a - n - c in let res = if sub < 0 then 0x100 + sub else sub in
     State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
-    ~h:(a land 0xF < n land 0xF + c) ~c:(sub < 0) (),
+    ~h:(a land 0xF < (n land 0xF) + c) ~c:(sub < 0) (),
     Next, 2
 
   let iSUB_Ar8 r : instruction = fun st ->

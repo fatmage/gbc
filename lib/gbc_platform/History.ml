@@ -4,7 +4,7 @@ module type S = sig
   type state
   type t
   val empty : t
-  val add_state : t -> state -> t
+  val add_state : t -> state -> bool -> t
   val get : t -> state
   val move_back : t -> t
   val move_back_n : t -> int -> t
@@ -16,7 +16,7 @@ module Make (State : Gbc_core.State.S) : (S with type state = State.t) = struct
   type t = state list
 
   let empty = []
-  let add_state xs st = st :: xs
+  let add_state xs st _ = st :: xs
   let get =
     function
     | st :: _ -> st

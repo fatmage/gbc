@@ -236,9 +236,8 @@ module Make (M : Palettes_intf) : S = struct
         | [], _ -> acc
         | _, 10 -> acc
         | { y_p; x_p; t_index; flags } :: xs, cnt ->
-          let y_p = y_p - 16 in
           let acc, cnt =
-          if y_p <= ly && ly <= y_p + size - 1 then
+          if y_p - 16 <= ly && ly <= y_p - 16 + size - 1 then
             ({y_p; x_p; t_index; flags} :: acc), (cnt + 1) else acc, cnt
           in
           aux acc xs cnt
@@ -351,7 +350,7 @@ module Make (M : Palettes_intf) : S = struct
 
     (* TODO: experimented with ly = 0 instead of putting gameboy in vblank, come back here *)
     let initial =
-      { lcdc = 0x91; ly = 0; lyc = 0; dma = 0x00;
+      { lcdc = 0x91; ly = 0x91; lyc = 0; dma = 0x00;
         stat = 0x81; scy = 0; scx = 0; wy = 0; wx = 0; wlc = 0 }
 
     let get m =
@@ -445,18 +444,23 @@ module Make (M : Palettes_intf) : S = struct
   let scan_oam m ly =
     let size = LCD_Regs.obj_size m.lcd_regs in
     let objs = OAM.scan_oam m.oam ly size in
+    (* let print_obj ({ y_p; x_p; t_index; flags }:  OAM.object_data) =
+      print_endline @@ Printf.sprintf "Obj - y: %02X, x: %02X, i: %02X, f: %02X" y_p x_p t_index flags
+    in *)
     let scan_object_data ({ y_p; x_p; t_index; flags} : OAM.object_data) =
       let prio = flags land 0x80 > 0 in
       let y_flip = flags land 0x40 > 0 in
       let x_flip = flags land 0x20 > 0 in
       let bank = (flags land 0x08) lsr 3 in
       let palette = flags land 0x07 in
-      let row = if y_flip then size - (ly - y_p) else ly - y_p in
+      let row = if y_flip then size - 1 - (ly - y_p + 16) else ly - y_p + 16 in
       let p1, p2 = VRAM.get_obj_tile_data_row m.vram t_index size row bank in
       let p1, p2 = if x_flip then p1, p2 else Utils.rev_u8 p1, Utils.rev_u8 p2 in
+      (* print_obj {y_p; x_p; t_index; flags}; *)
       { x_p; p1; p2; palette; prio }
     in
     List.map scan_object_data objs
+    (* let _ = if ly = 0 then read_line () else "" in r *)
 
 
 

@@ -293,7 +293,8 @@ module Make (State : State.S) : S = struct
     let _ = if st.regs._SP != 0xFFFF then
     Utils.print_hex "Value at SP" @@ State.get_SPp st else () in
     Utils.print_hex "Value at HL" @@ State.get_HLp st;
-    (* let _ = if st.regs._PC = 0x0238 then read_line () else "" in *)
+    Utils.print_hex "LY" st.gpu_mem.lcd_regs.ly;
+    (* let _ = if st.regs._PC = 0x073E then read_line () else "" in *)
 
     match State.Bus.get8 st st.regs._PC with
     | 0x00 -> Instruction.iNOP, 1
@@ -598,12 +599,12 @@ module Make (State : State.S) : S = struct
     execute instr st length
 
   let poll_interrupts_halted (st : State.t) =
-    print_endline "pollujemy interrupty";
+    (* print_endline "pollujemy interrupty";
     Utils.print_hex "LCDC" st.gpu_mem.lcd_regs.lcdc;
     Utils.print_hex "STAT" st.gpu_mem.lcd_regs.stat;
     Utils.print_hex "LY" st.gpu_mem.lcd_regs.ly;
     Utils.print_hex "LYC" st.gpu_mem.lcd_regs.lyc;
-    State.print_interrupts st;
+    State.print_interrupts st; *)
     let st, addr, (act : State.cpu_activity) =
       match st.ime with
       | Enabled ->

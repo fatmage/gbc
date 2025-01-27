@@ -40,6 +40,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let sprite_buffer : obj_data list ref = ref []
 
   let reset_sprite_buffer () = sprite_buffer := []
+  let reset_obj_buffer () = Array.fill obj_buffer 0 160 empty_pixel
 
   let dot_of_mc mcycles speed =
     if speed then mcycles * 2 else mcycles * 4
@@ -48,39 +49,38 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let render_bgw_line (st : state)  ly =
     let render_bg_line (st : state) ly tile_data_area =
-      Utils.print_dec "=============================RENDERING====================================" ly;
+      (* Utils.print_dec "=============================RENDERING====================================" ly; *)
       let scy, scx = st.gpu_mem.lcd_regs.scy, st.gpu_mem.lcd_regs.scx in
       let y = (scy + ly) mod bg_wh in
-      Utils.print_dec "Y" y;
+      (* Utils.print_dec "Y" y;
       Utils.print_dec "SCY" scy;
-      Utils.print_dec "LY" ly;
+      Utils.print_dec "LY" ly; *)
       let bg_tile_map_area = State.GPUmem.LCD_Regs.bg_tm_area st.gpu_mem.lcd_regs in
       let row_in_tile = y mod 8 in
       let lx = ref 0 in
       let cnt = ref 0 in
       while !lx < screen_w do
-        Utils.print_dec "Tile n" !cnt;
+        (* Utils.print_dec "Tile n" !cnt; *)
         cnt := !cnt + 1;
         let x = (scx + !lx) mod bg_wh in
         let col_in_tile = x mod 8 in
-        Utils.print_hex "Tile y" y;
-        Utils.print_hex "Tile x" x;
+        (* Utils.print_hex "Tile y" y; *)
+        (* Utils.print_hex "Tile x" x; *)
         let tile_index = State.GPUmem.VRAM.get_tile_index st.gpu_mem.vram bg_tile_map_area y x in
-        Utils.print_hex "Tile_index" tile_index;
+        (* Utils.print_hex "Tile_index" tile_index; *)
         let tile_attr = State.GPUmem.VRAM.get_tile_attributes st.gpu_mem.vram bg_tile_map_area y x in
-        Utils.print_hex "Tile attributes" tile_attr;
+        (* Utils.print_hex "Tile attributes" tile_attr; *)
         let prio = tile_attr land 0x80 > 0 in
         let y_flip = tile_attr land 0x40 > 0 in
         let x_flip = tile_attr land 0x20 > 0 in
         let bank = (tile_attr land 0x08) lsr 3 in
         let palette = tile_attr land 0x07 in
-        Utils.print_dec "Palette" palette;
-        Utils.print_dec "Bank" bank;
+        (* Utils.print_dec "Palette" palette; *)
+        (* Utils.print_dec "Bank" bank; *)
         let row_in_tile = if y_flip then 7 - row_in_tile else row_in_tile in
         let p1, p2 = State.GPUmem.VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_index row_in_tile bank in
         let p1 = if x_flip then ref p1 else ref (Utils.rev_u8 p1) in
         let p2 = if x_flip then ref p2 else ref (Utils.rev_u8 p2) in
-        if palette = 4 then State.print_palettes st else ();
         let len =
           if col_in_tile > 0 then
             8 - col_in_tile
@@ -93,8 +93,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
           p1 := !p1 lsr 1;
           p2 := !p2 lsr 1;
-          Utils.print_dec "piszemy do bg_buffer" (!lx + i);
-          Utils.print_hex "color" color;
+          (* Utils.print_dec "piszemy do bg_buffer" (!lx + i); *)
+          (* Utils.print_hex "color" color; *)
           bgw_buffer.(!lx + i) <- (mk_pixel color palette 0 prio)
         done;
 
@@ -114,18 +114,18 @@ module Make (State : State.S) : (S with type state = State.t) = struct
         while !lx < screen_w do
           window_line_drawn := true;
           let x_in_w = !lx - wx in
-          Utils.print_hex "Tile map area" window_tile_map_area;
+          (* Utils.print_hex "Tile map area" window_tile_map_area; *)
           let tile_index = State.GPUmem.VRAM.get_tile_index st.gpu_mem.vram window_tile_map_area y_in_w x_in_w in
-          Utils.print_hex "Tile_index" tile_index;
+          (* Utils.print_hex "Tile_index" tile_index; *)
           let tile_attr = State.GPUmem.VRAM.get_tile_attributes st.gpu_mem.vram window_tile_map_area y_in_w x_in_w in
-          Utils.print_hex "Tile attributes" tile_attr;
+          (* Utils.print_hex "Tile attributes" tile_attr; *)
           let prio = tile_attr land 0x80 > 0 in
           let y_flip = tile_attr land 0x40 > 0 in
           let x_flip = tile_attr land 0x20 > 0 in
           let bank = (tile_attr land 0x08) lsr 3 in
           let palette = tile_attr land 0x07 in
-          Utils.print_dec "Palette" palette;
-          Utils.print_dec "Bank" bank;
+          (* Utils.print_dec "Palette" palette; *)
+          (* Utils.print_dec "Bank" bank; *)
           let row_in_tile = if y_flip then 7 - row_in_tile else row_in_tile in
           let p1, p2 = State.GPUmem.VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_index row_in_tile bank in
           let p1 = if x_flip then ref p1 else ref (Utils.rev_u8 p1) in
@@ -135,11 +135,11 @@ module Make (State : State.S) : (S with type state = State.t) = struct
             let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
             p1 := !p1 lsr 1;
             p2 := !p2 lsr 1;
-            Utils.print_dec "piszemy do w_buffer" (!lx + i);
-            Utils.print_hex "WY" wy;
-            Utils.print_hex "WX" @@ wx+7;
-            Utils.print_hex "color" color;
-            Utils.print_hex "WLC" st.gpu_mem.lcd_regs.wlc;
+            (* Utils.print_dec "piszemy do w_buffer" (!lx + i); *)
+            (* Utils.print_hex "WY" wy; *)
+            (* Utils.print_hex "WX" @@ wx+7; *)
+            (* Utils.print_hex "color" color; *)
+            (* Utils.print_hex "WLC" st.gpu_mem.lcd_regs.wlc; *)
             (* let _ = if ly = 113 then let _ = print_endline" ly 113 window" in let _ = read_line () in () else () in *)
             bgw_buffer.(!lx + i) <- (mk_pixel color palette 0 prio)
           done;
@@ -161,29 +161,36 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     in
     List.iteri print_obj m
 
+  let print_pixel i { color;  palette; sprite_prio; prio } =
+    print_endline @@ Printf.sprintf "Pixel %d - col: %d; pal: %d, sprio: %d, prio: %d" i color palette sprite_prio (bool_to_int prio)
+
 
   let scan_oam (st : state) =
-    print_endline "========= =skanujemy oam ========";
-    State.GPUmem.OAM.print_oam st.gpu_mem.oam;
-    sprite_buffer := State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly;
-    print_endline " === zeskanowany ===";
+    (* print_endline "========= =skanujemy oam ========";
+    State.GPUmem.OAM.print_oam st.gpu_mem.oam; *)
+    sprite_buffer := State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly
+    (* print_endline " === zeskanowany ===";
     print_scanned !sprite_buffer;
     (* let _ = read_line () in *)
-    print_endline "wczytalismy"
+    print_endline "wczytalismy" *)
 
 
 
 
   let render_obj_line () =
+    let len = List.length !sprite_buffer in
     let draw_obj obj_prio ({ x_p; p1; p2 ; palette; prio } : obj_data) =
-      let lx = ref (x_p - 7) in
+
+      let lx = x_p - 8 in
       let p1 = ref p1 in
       let p2 = ref p2 in
-      for _ = 0 to 7 do
+      let obj_prio = len - obj_prio in
+      (* print_endline @@ Printf.sprintf "rysujemy obiekt %d na pozycji %d" obj_prio lx; *)
+      for i = 0 to 7 do
         begin
-        if !lx >= 0 && !lx < screen_w then
+        if (lx + i) >= 0 && (lx + i) < screen_w then
           let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
-          obj_buffer.(!lx) <- (mk_pixel color palette obj_prio prio)
+          obj_buffer.(lx + i) <- (mk_pixel color palette obj_prio prio)
         end;
         p1 := !p1 lsr 1;
         p2 := !p2 lsr 1;
@@ -199,8 +206,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Utils.print_dec "color" color; *)
     let v = State.GPUmem.Palettes.lookup_arr arr palette color in
 
-    Utils.print_dec "x" x;
-    Utils.print_hex "Pixel rgb" v;
+    (* Utils.print_dec "x" x;
+    Utils.print_hex "Pixel rgb" v; *)
     (* if y = 5 && (x >= 120 && x <= 127) then let _ = read_line () in () else (); *)
 
     framebuffer.(y).(x) <- v
@@ -220,7 +227,9 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       render_obj_line ()
       (* () *)
     end;
+    (* print_scanned !sprite_buffer; *)
     for i = 0 to screen_w - 1 do
+      (* let _ = if ly = 0 then read_line () else "" in *)
       match bgw_buffer.(i), obj_buffer.(i), State.GPUmem.LCD_Regs.bgwindow_ep st.gpu_mem.lcd_regs with
       (* No object pixel *)
       | { color = bwcolor; palette; _}, {color = -1; _}, _ ->
@@ -236,7 +245,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       | {palette; color; _}, _, true ->
         push_pixel ly i bgw_palette palette color
     done;
-    reset_sprite_buffer ()
+    reset_sprite_buffer ();
+    reset_obj_buffer ()
 
 
   let check_ly_lyc (st : state) =
@@ -282,8 +292,6 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       | GPUmode.OAM_scan c    ->
         let new_c = c + dots in
         if new_c >= 80 then
-
-          let _ = print_endline @@ "LY " ^ (string_of_int st.gpu_mem.lcd_regs.ly) in
           let _ = scan_oam st in
           State.change_mode st @@ Drawing_pixels (new_c - 80, 172), false
         else

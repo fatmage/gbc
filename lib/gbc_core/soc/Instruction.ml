@@ -363,9 +363,9 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Next, 2
 
   let iBIT_u3HLp u : instruction = fun st ->
-    print_endline "zaczynamy u3HLp";
+    (* print_endline "zaczynamy u3HLp"; *)
     let hlp = State.get_HLp st in
-    print_endline "wzielismy hlp w bit";
+    (* print_endline "wzielismy hlp w bit"; *)
     State.set_flags st ~z:(hlp land (1 lsl u) = 0) ~n:false ~h:true (),
     Next, 3
 
@@ -713,8 +713,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let iPOP_r16 r : instruction = fun st ->
     let sp = State.get_SPp st in
-    State.set_flags (State.set_r16 (State.inc_SP st) r sp) ~z:(sp land 0x80 > 0)
-    ~n:(sp land 0x40 > 0) ~h:(sp land 0x20 > 0) ~c:(sp land 0x10 > 0) (),
+    State.set_r16 (State.inc_SP st) r sp,
     Next, 3
 
   let iPUSH_AF : instruction = fun st ->

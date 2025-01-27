@@ -140,7 +140,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
             Utils.print_hex "WX" @@ wx+7;
             Utils.print_hex "color" color;
             Utils.print_hex "WLC" st.gpu_mem.lcd_regs.wlc;
-            let _ = if ly = 113 then let _ = print_endline" ly 113 window" in let _ = read_line () in () else () in
+            (* let _ = if ly = 113 then let _ = print_endline" ly 113 window" in let _ = read_line () in () else () in *)
             bgw_buffer.(!lx + i) <- (mk_pixel color palette 0 prio)
           done;
           lx := !lx + len
@@ -152,10 +152,27 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       render_w_line st ly tile_data_area
       (* () *)
 
+  let bool_to_int b =
+    if b then 1 else 0
+
+  let print_scanned (m : obj_data list) =
+    let print_obj i ({x_p; p1; p2; palette; prio} : obj_data) =
+      print_endline @@ Printf.sprintf "Obj %d - x: %02X, p1: %02X, p2: %02X, pal: %02X, prio: %d" i x_p p1 p2 palette (bool_to_int prio)
+    in
+    List.iteri print_obj m
+
+
+  let scan_oam (st : state) =
+    print_endline "========= =skanujemy oam ========";
+    State.GPUmem.OAM.print_oam st.gpu_mem.oam;
+    sprite_buffer := State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly;
+    print_endline " === zeskanowany ===";
+    print_scanned !sprite_buffer;
+    (* let _ = read_line () in *)
+    print_endline "wczytalismy"
 
 
 
-  let scan_oam (st : state) = sprite_buffer := State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly
 
   let render_obj_line () =
     let draw_obj obj_prio ({ x_p; p1; p2 ; palette; prio } : obj_data) =
@@ -198,8 +215,10 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     render_bgw_line st ly;
     begin
     if State.GPUmem.LCD_Regs.obj_enabled st.gpu_mem.lcd_regs then
-      (* render_obj_line () *)
-      ()
+      (* State.GPUmem.OAM.print_oam st.gpu_mem.oam; *)
+      (* let _ = read_line () in *)
+      render_obj_line ()
+      (* () *)
     end;
     for i = 0 to screen_w - 1 do
       match bgw_buffer.(i), obj_buffer.(i), State.GPUmem.LCD_Regs.bgwindow_ep st.gpu_mem.lcd_regs with
@@ -263,6 +282,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       | GPUmode.OAM_scan c    ->
         let new_c = c + dots in
         if new_c >= 80 then
+
+          let _ = print_endline @@ "LY " ^ (string_of_int st.gpu_mem.lcd_regs.ly) in
           let _ = scan_oam st in
           State.change_mode st @@ Drawing_pixels (new_c - 80, 172), false
         else

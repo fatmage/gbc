@@ -23,6 +23,7 @@ module type S = sig
     val get : t -> int -> int
     val set : t -> int -> int -> t
     val scan_oam : t -> int -> int -> t
+    val print_oam : t -> unit
     val in_range : int -> bool
   end
   module VRAM : sig
@@ -244,6 +245,12 @@ module Make (M : Palettes_intf) : S = struct
       in
       aux [] m 0
 
+    let print_oam m =
+      let print_obj i { y_p; x_p; t_index; flags } =
+        print_endline @@ Printf.sprintf "Obj %d - y: %02X, x: %02X, i: %02X, f: %02X" i y_p x_p t_index flags
+      in
+      List.iteri print_obj m
+
     let in_range i = 0xFE00 <= i && i <= 0xFE9F
   end
 
@@ -442,7 +449,7 @@ module Make (M : Palettes_intf) : S = struct
       let prio = flags land 0x80 > 0 in
       let y_flip = flags land 0x40 > 0 in
       let x_flip = flags land 0x20 > 0 in
-      let bank = flags land 0x08 lsr 3 in
+      let bank = (flags land 0x08) lsr 3 in
       let palette = flags land 0x07 in
       let row = if y_flip then size - (ly - y_p) else ly - y_p in
       let p1, p2 = VRAM.get_obj_tile_data_row m.vram t_index size row bank in

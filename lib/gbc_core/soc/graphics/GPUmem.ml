@@ -37,7 +37,7 @@ module type S = sig
     type t =
     {
       lcdc : int; ly : int; lyc : int; dma : int;
-      stat : int; scy: int; scx : int; wy : int; wx : int;
+      stat : int; scy: int; scx : int; wy : int; wx : int; wlc : int
     }
     val initial : t
     val get : t -> int -> int
@@ -65,6 +65,9 @@ module type S = sig
 
     val inc_ly : t -> t
     val cmp_lyc : t -> t * bool
+
+    val reset_wlc : t -> t
+    val inc_wlc : t -> t
 
   end
   module Palettes : Palettes_intf
@@ -159,7 +162,7 @@ module Palettes_CGB : Palettes_intf = struct
   let lookup_arr arr palette color =
     let l = arr.(palette * 8 + (color * 2)) in
     let h = arr.(palette * 8 + (color * 2) + 1) in
-    (l lsl 8) lor h
+    (h lsl 8) lor l
 
   let print_palettes palettes =
     let bgw_arr = bgw_array palettes in
@@ -336,13 +339,13 @@ module Make (M : Palettes_intf) : S = struct
     type t =
       {
         lcdc : int; ly : int; lyc : int; dma : int;
-        stat : int; scy: int; scx : int; wy : int; wx : int;
+        stat : int; scy: int; scx : int; wy : int; wx : int; wlc: int
       }
 
     (* TODO: experimented with ly = 0 instead of putting gameboy in vblank, come back here *)
     let initial =
       { lcdc = 0x91; ly = 0; lyc = 0; dma = 0x00;
-        stat = 0x81; scy = 0; scx = 0; wy = 0; wx = 0 }
+        stat = 0x81; scy = 0; scx = 0; wy = 0; wx = 0; wlc = 0 }
 
     let get m =
       function
@@ -395,6 +398,13 @@ module Make (M : Palettes_intf) : S = struct
         { m with stat = m.stat lor 0x04 }, true
       else
         { m with stat = m.stat land 0xFB }, false
+
+
+    let reset_wlc m =
+      { m with wlc = 0 }
+    let inc_wlc m =
+      { m with wlc = m.wlc + 1 }
+
     let in_range i = (0xFF40 <= i && i <= 0xFF45) || i = 0xFF4A || i = 0xFF4B
   end
 

@@ -19,7 +19,7 @@ let init_graphics () =
   Sdl.create_renderer window ~index:(-1) |> or_exit
 
 let create_texture renderer =
-  Sdl.create_texture renderer Sdl.Pixel.format_rgba5551
+  Sdl.create_texture renderer Sdl.Pixel.format_bgr555
   Sdl.Texture.access_streaming ~w:gbc_w ~h:gbc_h
   |> or_exit
 
@@ -28,11 +28,13 @@ let render_framebuffer texture renderer framebuffer =
     for y = 0 to gbc_h - 1 do
       for x = 0 to gbc_w -1 do
         let index = (y * gbc_w) + x in
-        pixels.{index} <- framebuffer.(y).(x) lor 0x0080;
+        (* pixels.{index} <- 0xED7E lsr 1; *)
+        pixels.{index} <- framebuffer.(y).(x);
         if y = 5 && x = 122 then
-          let _ = print_endline "PRAWDZIWY KOLOR" in
-          let _ = print_int @@ framebuffer.(y).(x) lor 0x0080 in
-          let _ = read_line () in ()
+          ()
+          (* let _ = print_endline "PRAWDZIWY KOLOR" in *)
+          (* let _ = print_int @@ framebuffer.(y).(x) lor 0x0080 in *)
+          (* let _ = read_line () in () *)
 
       done
     done

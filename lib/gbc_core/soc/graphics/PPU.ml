@@ -44,6 +44,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
   let dot_of_mc mcycles speed =
     if speed then mcycles * 2 else mcycles * 4
 
+  let window_line_drawn = ref false
+
   let render_bgw_line (st : state)  ly =
     let render_bg_line (st : state) ly tile_data_area =
       Utils.print_dec "=============================RENDERING====================================" ly;
@@ -70,7 +72,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
         let prio = tile_attr land 0x80 > 0 in
         let y_flip = tile_attr land 0x40 > 0 in
         let x_flip = tile_attr land 0x20 > 0 in
-        let bank = tile_attr land 0x08 lsr 3 in
+        let bank = (tile_attr land 0x08) lsr 3 in
         let palette = tile_attr land 0x07 in
         Utils.print_dec "Palette" palette;
         Utils.print_dec "Bank" bank;
@@ -96,28 +98,35 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           bgw_buffer.(!lx + i) <- (mk_pixel color palette 0 prio)
         done;
 
-        (* let _ = if ly = 5 then let _ = State.print_palettes st  in read_line () else "" in *)
+        (* let _ = if ly = 50 then read_line () else "" in *)
         lx := !lx + len
       done
     in
     let render_w_line (st : state) ly tile_data_area =
+
       let wy = st.gpu_mem.lcd_regs.wy in
       let wx = st.gpu_mem.lcd_regs.wx - 7 in
       if wy <= ly && ly <= wy + window_wh && wx <= screen_w then
         let window_tile_map_area = State.GPUmem.LCD_Regs.window_tm_area st.gpu_mem.lcd_regs in
-        let y_in_w = Int.abs (ly - wy) in
+        let y_in_w = st.gpu_mem.lcd_regs.wlc in
         let row_in_tile = y_in_w mod 8 in
-        let lx = ref (if wx < 0 then 0 else wx) in
+        let lx = ref (if wx < 0 then 0 else wx)  in
         while !lx < screen_w do
-          let x_in_w = Int.abs (!lx - wx) in
+          window_line_drawn := true;
+          let x_in_w = !lx - wx in
+          Utils.print_hex "Tile map area" window_tile_map_area;
           let tile_index = State.GPUmem.VRAM.get_tile_index st.gpu_mem.vram window_tile_map_area y_in_w x_in_w in
+          Utils.print_hex "Tile_index" tile_index;
           let tile_attr = State.GPUmem.VRAM.get_tile_attributes st.gpu_mem.vram window_tile_map_area y_in_w x_in_w in
+          Utils.print_hex "Tile attributes" tile_attr;
           let prio = tile_attr land 0x80 > 0 in
           let y_flip = tile_attr land 0x40 > 0 in
           let x_flip = tile_attr land 0x20 > 0 in
-          let bank = tile_attr land 0x08 lsr 3 in
+          let bank = (tile_attr land 0x08) lsr 3 in
           let palette = tile_attr land 0x07 in
-          let row_in_tile = if y_flip then 8 - row_in_tile else row_in_tile in
+          Utils.print_dec "Palette" palette;
+          Utils.print_dec "Bank" bank;
+          let row_in_tile = if y_flip then 7 - row_in_tile else row_in_tile in
           let p1, p2 = State.GPUmem.VRAM.get_tile_data_row st.gpu_mem.vram tile_data_area tile_index row_in_tile bank in
           let p1 = if x_flip then ref p1 else ref (Utils.rev_u8 p1) in
           let p2 = if x_flip then ref p2 else ref (Utils.rev_u8 p2) in
@@ -127,7 +136,11 @@ module Make (State : State.S) : (S with type state = State.t) = struct
             p1 := !p1 lsr 1;
             p2 := !p2 lsr 1;
             Utils.print_dec "piszemy do w_buffer" (!lx + i);
-            (* let _ = read_line () in *)
+            Utils.print_hex "WY" wy;
+            Utils.print_hex "WX" @@ wx+7;
+            Utils.print_hex "color" color;
+            Utils.print_hex "WLC" st.gpu_mem.lcd_regs.wlc;
+            let _ = if ly = 113 then let _ = print_endline" ly 113 window" in let _ = read_line () in () else () in
             bgw_buffer.(!lx + i) <- (mk_pixel color palette 0 prio)
           done;
           lx := !lx + len
@@ -136,8 +149,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     let tile_data_area = State.GPUmem.LCD_Regs.bw_base_pointer st.gpu_mem.lcd_regs in
     render_bg_line st ly tile_data_area;
     if State.GPUmem.LCD_Regs.window_enabled st.gpu_mem.lcd_regs then
-      (* render_w_line st ly tile_data_area *)
-      ()
+      render_w_line st ly tile_data_area
+      (* () *)
 
 
 
@@ -230,6 +243,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           else
             let st = if State.GPUmem.LCD_Regs.mode1_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
             let st = State.request_VBlank st in
+            let st = { st with gpu_mem = { st.gpu_mem with lcd_regs = State.GPUmem.LCD_Regs.reset_wlc st.gpu_mem.lcd_regs } } in
             State.change_mode st @@ VBlank (new_c - m), false
         else
           State.update_mode st @@ HBlank (new_c, m), false
@@ -257,6 +271,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
         let new_c = c + dots in
         if new_c >= m then
           let _ = render_line st in
+          let st = if !window_line_drawn then { st with gpu_mem = { st.gpu_mem with lcd_regs = State.GPUmem.LCD_Regs.inc_wlc st.gpu_mem.lcd_regs } } else st in
+          window_line_drawn := false;
           let st = if State.GPUmem.LCD_Regs.mode0_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
           State.change_mode st @@ HBlank (new_c, 204), false
         else

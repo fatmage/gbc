@@ -66,7 +66,6 @@ module type S = sig
 
     val inc_ly : t -> t
     val cmp_lyc : t -> t * bool
-
     val reset_wlc : t -> t
     val inc_wlc : t -> t
 
@@ -264,9 +263,9 @@ module Make (M : Palettes_intf) : S = struct
       match i with
       | 0xFF4F -> bank
       | _      ->
-        Utils.print_hex "Getting from bank" bank;
-        Utils.print_hex "get Value in bank 0" @@ Bank.get b0 i;
-        Utils.print_hex "get Value in bank 1" @@ Bank.get b1 i;
+        (* Utils.print_hex "Getting from bank" bank; *)
+        (* Utils.print_hex "get Value in bank 0" @@ Bank.get b0 i; *)
+        (* Utils.print_hex "get Value in bank 1" @@ Bank.get b1 i; *)
         match bank with
         | 0xFE -> Bank.get b0 i
         | 0xFF -> Bank.get b1 i
@@ -280,8 +279,8 @@ module Make (M : Palettes_intf) : S = struct
         | 0xFE -> (Bank.set b0 i v, b1, bank)
         | 0xFF -> (b0, Bank.set b1 i v, bank)
       in
-      Utils.print_hex "set Value in bank 0" @@ Bank.get b0 i;
-      Utils.print_hex "set Value in bank 1" @@ Bank.get b1 i;
+      (* Utils.print_hex "set Value in bank 0" @@ Bank.get b0 i; *)
+      (* Utils.print_hex "set Value in bank 1" @@ Bank.get b1 i; *)
       let _ =
         if i = 0x9927 then
           let _ = match m with (_,_,bank) -> Utils.print_hex "VRAM bank" bank in ()
@@ -294,16 +293,16 @@ module Make (M : Palettes_intf) : S = struct
 
     let get_tile_index (b0, b1, _) area y x =
       let addr = tile_aux_addr area y x in
-      Utils.print_hex "Address" addr;
-      Utils.print_hex "Value in bank 0" @@ Bank.get b0 addr;
-      Utils.print_hex "Value in bank 1" @@ Bank.get b1 addr;
+      (* Utils.print_hex "Address" addr; *)
+      (* Utils.print_hex "Value in bank 0" @@ Bank.get b0 addr; *)
+      (* Utils.print_hex "Value in bank 1" @@ Bank.get b1 addr; *)
       Bank.get b0 addr
 
     let get_tile_attributes (b0, b1, _) area y x =
       let addr = tile_aux_addr area y x in
-      Utils.print_hex "Address" addr;
-      Utils.print_hex "Value in bank 0" @@ Bank.get b0 addr;
-      Utils.print_hex "Value in bank 1" @@ Bank.get b1 addr;
+      (* Utils.print_hex "Address" addr; *)
+      (* Utils.print_hex "Value in bank 0" @@ Bank.get b0 addr; *)
+      (* Utils.print_hex "Value in bank 1" @@ Bank.get b1 addr; *)
       Bank.get b1 addr
 
     let get_tile_data_row (b0, b1, _) area index row chosen_bank =
@@ -314,12 +313,12 @@ module Make (M : Palettes_intf) : S = struct
       in
       match area with
       | 0x8000 -> let addr = (0x8000 + (index * 16) + (row * 2)) in
-        Utils.print_hex "Tile addr" (addr - row * 2);
+        (* Utils.print_hex "Tile addr" (addr - row * 2); *)
         Bank.get bank addr, Bank.get bank (addr + 1)
       | 0x9000 ->
         let s_index = Utils.s8 index in
         let addr = (0x9000 + (s_index * 16) + (row * 2)) in
-        Utils.print_hex "Tile addr" (addr - row * 2);
+        (* Utils.print_hex "Tile addr" (addr - row * 2); *)
         Bank.get bank addr, Bank.get bank (addr + 1)
 
     let get_obj_tile_data_row (b1, b2, b) index size row chosen_bank =

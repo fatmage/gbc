@@ -249,14 +249,6 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     reset_obj_buffer ()
 
 
-  let check_ly_lyc (st : state) =
-    let lcd_regs, interrupt = State.GPUmem.LCD_Regs.cmp_lyc st.gpu_mem.lcd_regs in
-    let st = { st with gpu_mem = { st.gpu_mem with lcd_regs } } in
-    if State.GPUmem.LCD_Regs.lyc_cond st.gpu_mem.lcd_regs && interrupt then
-      State.request_LCD st
-    else
-      st
-
   let process_ppu (st : state) dots =
     if not @@ State.GPUmem.LCD_Regs.lcd_enabled st.gpu_mem.lcd_regs then
       st, false
@@ -265,7 +257,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       | GPUmode.HBlank (c, m)         ->
         let new_c = c + dots in
         if new_c >= m then
-          let st = st |> State.inc_ly |> check_ly_lyc in
+          let st = st |> State.inc_ly |> State.check_ly_lyc in
           if st.gpu_mem.lcd_regs.ly < screen_h then
             let st = if State.GPUmem.LCD_Regs.mode2_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
             State.change_mode st @@ OAM_scan (new_c - m), false
@@ -279,11 +271,11 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       | GPUmode.VBlank c       ->
         let new_c = c + dots in
         if new_c >= line_duration then
-          let st = st |> State.inc_ly |> check_ly_lyc in
+          let st = st |> State.inc_ly |> State.check_ly_lyc in
           if State.get_ly st < screen_h + 10 then
             State.update_mode st @@ VBlank (new_c - line_duration), false
           else
-            let st = st |> State.reset_ly |> check_ly_lyc in
+            let st = st |> State.reset_ly |> State.check_ly_lyc in
             let st = if State.GPUmem.LCD_Regs.mode2_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
             print_endline "VBLANK";
             State.change_mode st @@ OAM_scan (new_c - line_duration), true

@@ -62,6 +62,7 @@ module type S = sig
   val inc_ly : t -> t
   val reset_ly : t -> t
   val get_ly : t -> int
+  val check_ly_lyc : t -> t
   val update_mode : t -> GPUmode.t -> t
   val change_mode : t -> GPUmode.t -> t
   val get_joypad : t -> int
@@ -99,6 +100,26 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     wave : WavePattern.t; ie: IE.t; ime : interrupts; activity : cpu_activity;
     dma_oam : DMAState.OAM.t; dma_vram : DMAState.VRAM.t;
   }
+
+  let request_joypad st = if IE.enabled_joypad st.ie then { st with iflag = Interrupts.request_joypad st.iflag } else st
+    let request_serial st = if IE.enabled_serial st.ie then { st with iflag = Interrupts.request_serial st.iflag } else st
+    let request_timer st = if IE.enabled_timer st.ie then { st with iflag = Interrupts.request_timer st.iflag } else st
+    let request_LCD st = if IE.enabled_LCD st.ie then { st with iflag = Interrupts.request_LCD st.iflag } else st
+    let request_VBlank st = if IE.enabled_VBlank st.ie then { st with iflag = Interrupts.request_VBlank st.iflag } else st
+
+    let interrupts_pending st = (IE.get st.ie 0) land (Interrupts.get st.iflag 0)
+
+    let inc_ly st = { st with gpu_mem = GPUmem.inc_ly st.gpu_mem }
+    let reset_ly st = { st with gpu_mem = GPUmem.reset_ly st.gpu_mem }
+    let get_ly st = GPUmem.get_ly st.gpu_mem
+
+    let check_ly_lyc st =
+      let eq = GPUmem.LCD_Regs.lyc_ly_eq st.gpu_mem.lcd_regs in
+      let lcd_regs, interrupt = GPUmem.LCD_Regs.cmp_lyc st.gpu_mem.lcd_regs in
+      if (not eq) && interrupt && GPUmem.LCD_Regs.lyc_cond st.gpu_mem.lcd_regs then
+        request_LCD st
+      else
+        st
 
   module Bus = struct
     (* https://gbdev.io/pandocs/Memory_Map.html
@@ -169,7 +190,10 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       | _ when Cartridge.in_range addr (* ROM + external cartridge *)
         -> { st with cartridge = Cartridge.set st.cartridge addr v }
       | _ when GPUmem.in_range addr (* VRAM, OAM, LCD control, palettes *)
-        -> { st with gpu_mem = GPUmem.set st.gpu_mem addr v }
+        ->
+          let st = { st with gpu_mem = GPUmem.set st.gpu_mem addr v } in
+          check_ly_lyc st
+          (* st *)
       (* External RAM *)
       | _ when RAM.WRAM.in_range addr (* WRAM *)
         -> { st with wram = RAM.WRAM.set st.wram addr v }
@@ -267,18 +291,6 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   let adv_PC st c = { st with regs = { st.regs with _PC = st.regs._PC + c } }
 
   let get_speed st = Timer.get_speed st.timer
-
-  let request_joypad st = if IE.enabled_joypad st.ie then { st with iflag = Interrupts.request_joypad st.iflag } else st
-  let request_serial st = if IE.enabled_serial st.ie then { st with iflag = Interrupts.request_serial st.iflag } else st
-  let request_timer st = if IE.enabled_timer st.ie then { st with iflag = Interrupts.request_timer st.iflag } else st
-  let request_LCD st = if IE.enabled_LCD st.ie then { st with iflag = Interrupts.request_LCD st.iflag } else st
-  let request_VBlank st = if IE.enabled_VBlank st.ie then { st with iflag = Interrupts.request_VBlank st.iflag } else st
-
-  let interrupts_pending st = (IE.get st.ie 0) land (Interrupts.get st.iflag 0)
-
-  let inc_ly st = { st with gpu_mem = GPUmem.inc_ly st.gpu_mem }
-  let reset_ly st = { st with gpu_mem = GPUmem.reset_ly st.gpu_mem }
-  let get_ly st = GPUmem.get_ly st.gpu_mem
 
   let update_mode st mode = { st with gpu_mem = GPUmem.update_mode st.gpu_mem mode }
   let change_mode st mode = { st with gpu_mem = GPUmem.change_mode st.gpu_mem mode }

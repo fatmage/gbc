@@ -12,7 +12,7 @@ end
 
 module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
   type state = GBC.State.t
-  module History = History.Make(GBC.State)
+  module History = History.Make(GBC)
 
   let rec emulator_loop  (st : state) (history : History.t)
     prev_time delta_time time_left texture renderer =
@@ -53,14 +53,14 @@ module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
         Input.dbg_input := { !Input.dbg_input with back= false };
         let move_back hs =
           if modifier then
-            let _ = print_endline "Moving back 100 states" in
-            History.move_back_n hs 100
+            let _ = print_endline "Moving back one frame" in
+            History.move_back_frame hs
           else
             let _ = print_endline "Moving back one state" in
             History.move_back hs
         in
-        let history = move_back history in
-        let st = History.get history in
+        let st, history = move_back history in
+        Graphics.render_framebuffer texture renderer GBC.PPU.framebuffer;
         GBC.print_registers st;
         GBC.print_interrupts st;
         debugger_loop st history texture renderer

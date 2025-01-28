@@ -277,7 +277,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           else
             let st = st |> State.reset_ly |> State.check_ly_lyc in
             let st = if State.GPUmem.LCD_Regs.mode2_cond st.gpu_mem.lcd_regs then State.request_LCD st else st in
-            print_endline "VBLANK";
+            print_endline "Frame ended.";
             State.change_mode st @@ OAM_scan (new_c - line_duration), true
         else
           State.update_mode st @@ VBlank new_c, false

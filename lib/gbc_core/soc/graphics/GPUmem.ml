@@ -65,7 +65,7 @@ module type S = sig
     val set_mode : t -> int -> t
 
     val inc_ly : t -> t
-    val cmp_lyc : t -> t * bool
+    val cmp_lyc : t -> t
     val reset_wlc : t -> t
     val inc_wlc : t -> t
 
@@ -400,9 +400,9 @@ module Make (M : Palettes_intf) : S = struct
       if ly >= 160 then  { m with ly = 0 }  else { m with ly }
     let cmp_lyc m =
       if m.ly = m.lyc then
-        { m with stat = m.stat lor 0x04 }, true
+        { m with stat = m.stat lor 0x04 }
       else
-        { m with stat = m.stat land 0xFB }, false
+        { m with stat = m.stat land 0xFB }
 
 
     let reset_wlc m =

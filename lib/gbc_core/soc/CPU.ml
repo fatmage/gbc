@@ -295,8 +295,8 @@ module Make (State : State.S) : S = struct
     Utils.print_hex "Value at HL" @@ State.get_HLp st;
     Utils.print_hex "LY" st.gpu_mem.lcd_regs.ly;
     Utils.print_hex "LYC" st.gpu_mem.lcd_regs.lyc;
-    let _ = if st.regs._PC = 0x0238 then let _ = print_endline "koniec" in read_line () else "" in
-    let _ = if st.regs._PC = 0x0048 then let _ = print_endline "handler" in read_line () else "" in
+    let _ = if st.regs._PC = 0x07f4 then read_line () else "" in
+    (* let _ = if st.regs._PC = 0x0048 then let _ = print_endline "handler" in read_line () else "" in *)
 
     match State.Bus.get8 st st.regs._PC with
     | 0x00 -> Instruction.iNOP, 1

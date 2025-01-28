@@ -114,9 +114,13 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     let get_ly st = GPUmem.get_ly st.gpu_mem
 
     let check_ly_lyc st =
-      let eq = GPUmem.LCD_Regs.lyc_ly_eq st.gpu_mem.lcd_regs in
-      let lcd_regs, interrupt = GPUmem.LCD_Regs.cmp_lyc st.gpu_mem.lcd_regs in
-      if (not eq) && interrupt && GPUmem.LCD_Regs.lyc_cond st.gpu_mem.lcd_regs then
+      let eq_before = GPUmem.LCD_Regs.lyc_ly_eq st.gpu_mem.lcd_regs in
+      let lcd_regs = GPUmem.LCD_Regs.cmp_lyc st.gpu_mem.lcd_regs in
+      let eq_after = GPUmem.LCD_Regs.lyc_ly_eq lcd_regs in
+      let st = { st with gpu_mem = { st.gpu_mem with lcd_regs } } in
+      if (not eq_before) && eq_after && GPUmem.LCD_Regs.lyc_cond st.gpu_mem.lcd_regs then
+        let _ = print_endline "zrequestowalismy lcd stat" in
+        let _ = read_line () in
         request_LCD st
       else
         st

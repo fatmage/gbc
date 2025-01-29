@@ -11,7 +11,7 @@ module type S = sig
   val is_empty : t -> bool
 end
 
-module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
+module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
 
   type state = GBC.State.t
   type input_entry =  { joypad : int; step : int }
@@ -93,7 +93,7 @@ module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
 
 end
 
-module MakeSparse (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
+module MakeSparse (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
 
   type state = GBC.State.t
   type t = state list

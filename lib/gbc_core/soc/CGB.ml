@@ -682,7 +682,6 @@ module Make (State : State.S) : S = struct
 
   let print_registers = State.print_registers
 
-
   let print_interrupts = State.print_interrupts
   let print_palettes = State.print_palettes
 

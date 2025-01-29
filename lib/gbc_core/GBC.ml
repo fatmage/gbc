@@ -1,6 +1,6 @@
 open Cartridge
 
-let gbc_module rom : (module CPU.S)=
+let gbc_module rom : (module CGB.S)=
   let mbc_type =
     match Bytes.get rom 0x147 |> int_of_char with
     | 0x00               -> print_endline "ROM_ONLY"; ROM_ONLY
@@ -48,4 +48,4 @@ let gbc_module rom : (module CPU.S)=
     (* | _, MBC3 -> *)
     | _, MBC5     -> (module State.Make(val Cartridge.mbc5 ram_banks)(GPUmem.CGB_memory))
   in
-  (module CPU.Make(val state_module))
+  (module CGB.Make(val state_module))

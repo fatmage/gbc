@@ -10,7 +10,7 @@ module type S = sig
 end
 
 
-module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
+module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
   type state = GBC.State.t
   module History = History.Make(GBC)
 

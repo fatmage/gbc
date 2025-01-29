@@ -127,8 +127,7 @@ module Palettes_CGB : Palettes_intf = struct
     | 0xFF6B -> List.nth m.obj_cram @@ m.ocps land 0x3F
 
   let set m i v =
-    Utils.print_hex "Piszemy do palettes" v;
-    let r = match i with
+    match i with
     | 0xFF47 -> { m with bgp  = v }
     | 0xFF48 -> { m with obp0 = v }
     | 0xFF49 -> { m with obp1 = v }
@@ -137,17 +136,14 @@ module Palettes_CGB : Palettes_intf = struct
       let addr = m.bcps land 0x3F in
       let m = if m.bcps land 0x80 > 0 then { m with bcps = (m.bcps land 0xC0) lor ((addr + 1) land 0x3F) } else m in
       let bgw_cram = List.mapi (fun i ei -> if i = addr then v else ei) m.bgw_cram in
-      Utils.print_dec "Palette changed" addr;
-      (* let _ = if i = 0xff69 then List.iteri (fun i v -> Utils.print_dec "Palette addr" i; Utils.print_hex "Palette val" v) bgw_cram else () in *)
-      (* let _ = if addr >= 32 && addr <= 39 then read_line () else "" in *)
+
       { m with bgw_cram }
     | 0xFF6A -> { m with ocps = v }
     | 0xFF6B ->
       let addr = m.ocps land 0x3F in
       let m = if m.ocps land 0x80 > 0 then { m with ocps = (m.ocps land 0xC0) lor ((addr + 1) land 0x3F) } else m in
       let obj_cram = List.mapi (fun i ei -> if i = addr then v else ei) m.obj_cram in
-      { m with obj_cram } in
-      r
+      { m with obj_cram }
 
 
   let rec nth_2 xs i =
@@ -198,8 +194,6 @@ module Make (M : Palettes_intf) : S = struct
       let i = i - 0xFE00 in
       let obj_i = i / 4 in
       let in_obj = i mod 4 in
-      Utils.print_dec "obj_i" obj_i;
-      Utils.print_dec "in_obj" in_obj;
       let { y_p; x_p; t_index; flags} = List.nth xs obj_i in
       match in_obj with
       | 0 -> y_p
@@ -210,8 +204,6 @@ module Make (M : Palettes_intf) : S = struct
       let i = i - 0xFE00 in
       let obj_i = i / 4 in
       let in_obj = i mod 4 in
-      Utils.print_dec "obj_i" obj_i;
-      Utils.print_dec "in_obj" in_obj;
       let rec aux xs i v acc =
         match xs, i with
         | x::xs, 0 ->
@@ -263,9 +255,6 @@ module Make (M : Palettes_intf) : S = struct
       match i with
       | 0xFF4F -> bank
       | _      ->
-        (* Utils.print_hex "Getting from bank" bank; *)
-        (* Utils.print_hex "get Value in bank 0" @@ Bank.get b0 i; *)
-        (* Utils.print_hex "get Value in bank 1" @@ Bank.get b1 i; *)
         match bank with
         | 0xFE -> Bank.get b0 i
         | 0xFF -> Bank.get b1 i
@@ -279,30 +268,16 @@ module Make (M : Palettes_intf) : S = struct
         | 0xFE -> (Bank.set b0 i v, b1, bank)
         | 0xFF -> (b0, Bank.set b1 i v, bank)
       in
-      (* Utils.print_hex "set Value in bank 0" @@ Bank.get b0 i; *)
-      (* Utils.print_hex "set Value in bank 1" @@ Bank.get b1 i; *)
-      let _ =
-        if i = 0x9927 then
-          let _ = match m with (_,_,bank) -> Utils.print_hex "VRAM bank" bank in ()
-          (* let _ = read_line() in () *)
-        else ()
-      in
       b0,b1,bank
 
     let tile_aux_addr area y x = (area + ((y/8) * 32) + (x/8))
 
     let get_tile_index (b0, b1, _) area y x =
       let addr = tile_aux_addr area y x in
-      (* Utils.print_hex "Address" addr; *)
-      (* Utils.print_hex "Value in bank 0" @@ Bank.get b0 addr; *)
-      (* Utils.print_hex "Value in bank 1" @@ Bank.get b1 addr; *)
       Bank.get b0 addr
 
     let get_tile_attributes (b0, b1, _) area y x =
       let addr = tile_aux_addr area y x in
-      (* Utils.print_hex "Address" addr; *)
-      (* Utils.print_hex "Value in bank 0" @@ Bank.get b0 addr; *)
-      (* Utils.print_hex "Value in bank 1" @@ Bank.get b1 addr; *)
       Bank.get b1 addr
 
     let get_tile_data_row (b0, b1, _) area index row chosen_bank =
@@ -313,12 +288,10 @@ module Make (M : Palettes_intf) : S = struct
       in
       match area with
       | 0x8000 -> let addr = (0x8000 + (index * 16) + (row * 2)) in
-        (* Utils.print_hex "Tile addr" (addr - row * 2); *)
         Bank.get bank addr, Bank.get bank (addr + 1)
       | 0x9000 ->
         let s_index = Utils.s8 index in
         let addr = (0x9000 + (s_index * 16) + (row * 2)) in
-        (* Utils.print_hex "Tile addr" (addr - row * 2); *)
         Bank.get bank addr, Bank.get bank (addr + 1)
 
     let get_obj_tile_data_row (b1, b2, b) index size row chosen_bank =
@@ -347,7 +320,6 @@ module Make (M : Palettes_intf) : S = struct
         stat : int; scy: int; scx : int; wy : int; wx : int; wlc: int
       }
 
-    (* TODO: experimented with ly = 0 instead of putting gameboy in vblank, come back here *)
     let initial =
       { lcdc = 0x91; ly = 0x91; lyc = 0; dma = 0x00;
         stat = 0x81; scy = 0; scx = 0; wy = 0; wx = 0; wlc = 0 }
@@ -443,9 +415,6 @@ module Make (M : Palettes_intf) : S = struct
   let scan_oam m ly =
     let size = LCD_Regs.obj_size m.lcd_regs in
     let objs = OAM.scan_oam m.oam ly size in
-    (* let print_obj ({ y_p; x_p; t_index; flags }:  OAM.object_data) =
-      print_endline @@ Printf.sprintf "Obj - y: %02X, x: %02X, i: %02X, f: %02X" y_p x_p t_index flags
-    in *)
     let scan_object_data ({ y_p; x_p; t_index; flags} : OAM.object_data) =
       let prio = flags land 0x80 > 0 in
       let y_flip = flags land 0x40 > 0 in
@@ -455,11 +424,9 @@ module Make (M : Palettes_intf) : S = struct
       let row = if y_flip then size - 1 - (ly - y_p + 16) else ly - y_p + 16 in
       let p1, p2 = VRAM.get_obj_tile_data_row m.vram t_index size row bank in
       let p1, p2 = if x_flip then p1, p2 else Utils.rev_u8 p1, Utils.rev_u8 p2 in
-      (* print_obj {y_p; x_p; t_index; flags}; *)
       { x_p; p1; p2; palette; prio }
     in
     List.map scan_object_data objs
-    (* let _ = if ly = 0 then read_line () else "" in r *)
 
 
 

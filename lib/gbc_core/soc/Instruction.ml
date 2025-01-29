@@ -585,7 +585,6 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Next, 4
 
   let iLDH_An16p n : instruction = fun st ->
-    Utils.print_hex "LDH_An16p offset" n;
     State.set_A st (State.Bus.get8 st (0xFF00 + n)),
     Next, 3
 
@@ -778,45 +777,28 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
 
   let iSTOP (state : State.t) : instruction * int =
-    Utils.print_hex "Joypad state" (IOregs.Joypad.get state.joypad 0);
     match 0x0F land IOregs.Joypad.get state.joypad 0 with
     | 0x0F ->
-      print_endline "no button pressed";
-      Utils.print_hex "KEY1 value" state.timer.key1;
-      Utils.print_hex "Key1 get" @@ State.Bus.get8 state 0xFF4D;
       begin match IOregs.Timer.switch_requested state.timer (* was a speed switch requested in key1 *) with
       | true ->
-        print_endline "switch requested";
         if State.interrupts_pending state > 0 then
-          let _ = print_endline "interrupt pending" in
           (fun st -> ({ st with timer = IOregs.Timer.switch_speed (IOregs.Timer.reset_div st.timer) }, Next, 1)), 1
         else
-          let _ = print_endline "no interrupt pending" in
           (fun st -> ({ st with activity = Halted 0x8000; timer = IOregs.Timer.switch_speed (IOregs.Timer.reset_div st.timer) }, Next, 1)), 2
       | false ->
-        let _ = print_endline "switch not requested" in
           (fun st -> ({ st with activity = Stopped; timer = IOregs.Timer.reset_div st.timer }, Next, 1)),
           if State.interrupts_pending state > 0 then 1 else 2
       end
     | _    ->
-      let _ = print_endline "button pressed" in
       if State.interrupts_pending state > 0 then
-        let _ = print_endline "interrupt pending" in
         iNOP, 1
       else
-        let _ = print_endline "no interrupt pending" in
         (fun st -> st, Next, 1), 2
-
 
 
 
   (* Not an actual instruction *)
   let interrupt_service_routine handler : instruction = fun st ->
-    Utils.print_hex "Entering interrupt service routine" handler;
-    Utils.print_hex "3 next values at address:" handler;
-    Utils.value_hex (State.Bus.get8 st handler);
-    Utils.value_hex (State.Bus.get8 st (handler + 1));
-    Utils.value_hex (State.Bus.get8 st (handler + 2));
     let st = { st with ime = Disabled } in
     State.set_PC (State.set_SPp (State.dec_SP st) (State.get_PC st)) handler,
     Jump, 5

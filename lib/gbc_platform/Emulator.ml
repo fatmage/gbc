@@ -44,22 +44,26 @@ module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
     Input.handle_debugger_events ();
     if !Input.switch_mode then
       let _ = Input.switch_mode := false in
-      (* switch display mode to emulator mode *)
+      (* switch to emulator mode *)
       let time = Sys.time () in
       emulator_loop st history time 0. 0. texture renderer
     else
       match !Input.dbg_input with
-      | { back = true; modifier;_ } ->
+      | { back = true; ctrl; alt;_ } ->
         Input.dbg_input := { !Input.dbg_input with back= false };
         let move_back hs =
-          if modifier then
+          if ctrl then
             let _ = print_endline "Moving back one frame" in
             History.move_back_frame hs
           else
-            let _ = print_endline "Moving back one state" in
-            History.move_back hs
+            if alt then
+              let _ = print_endline "Moving back one second" in
+              History.move_back_second hs
+            else
+              let _ = print_endline "Moving back one state" in
+              History.move_back hs
         in
-        let st, history = move_back history in
+        let st, history = if History.is_empty history then st, history else move_back history in
         Graphics.render_framebuffer texture renderer GBC.PPU.framebuffer;
         GBC.print_registers st;
         GBC.print_interrupts st;
@@ -71,6 +75,7 @@ module Make (GBC : Gbc_core.CPU.S) : (S with type state = GBC.State.t) = struct
         let st, _, frame_end = GBC.cpu_step st in
         let joypad = GBC.State.get_joypad st in
         let st = GBC.State.set_joypad st @@ Input.set_joypad joypad in
+        (* Final state in this step *)
         let history = History.add_state history st frame_end in
         debugger_loop st history texture renderer
       | _ -> debugger_loop st history texture renderer

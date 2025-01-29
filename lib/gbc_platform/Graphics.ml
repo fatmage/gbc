@@ -14,7 +14,7 @@ let or_exit = function
 let init_graphics () =
   Sdl.init Sdl.Init.(video + events) |> or_exit;
   let window =
-    Sdl.create_window ~w:scaled_gbc_w ~h:scaled_gbc_h "Gameboy Caml" Sdl.Window.windowed |> or_exit
+    Sdl.create_window ~w:scaled_gbc_w ~h:scaled_gbc_h "Game Boy Caml" Sdl.Window.windowed |> or_exit
   in
   Sdl.create_renderer window ~index:(-1) |> or_exit
 
@@ -28,14 +28,7 @@ let render_framebuffer texture renderer framebuffer =
     for y = 0 to gbc_h - 1 do
       for x = 0 to gbc_w -1 do
         let index = (y * gbc_w) + x in
-        (* pixels.{index} <- 0xED7E lsr 1; *)
         pixels.{index} <- framebuffer.(y).(x);
-        if y = 5 && x = 122 then
-          ()
-          (* let _ = print_endline "PRAWDZIWY KOLOR" in *)
-          (* let _ = print_int @@ framebuffer.(y).(x) lor 0x0080 in *)
-          (* let _ = read_line () in () *)
-
       done
     done
   in

@@ -17,8 +17,7 @@ module Joypad = struct
   type t = int
   let initial = 0xCF
   let get m _ = m
-  let set m _ v =
-    Utils.print_hex "Setting joypad" v; ((lnot m) land 0x30) lor 0x0F
+  let set m _ v = ((lnot m) land 0x30) lor 0x0F
   let set_input _ v = v
   let in_range v = v = 0xFF00
 end

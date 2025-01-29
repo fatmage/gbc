@@ -8,6 +8,7 @@ module type S = sig
 
   val init_gb : bytes -> State.t
 
+  val print_instructions : State.t -> unit
   val print_registers : State.t -> unit
   val print_interrupts : State.t -> unit
   val print_palettes : State.t -> unit
@@ -281,22 +282,15 @@ module Make (State : State.S) : S = struct
     | _ -> Instruction.iNOP
 
   let fetch_decode (st : State.t) : Instruction.instruction * int =
-    print_endline "========= FETCH_DECODE START =========";
-    Utils.print_hex "3 next values at PC" st.regs._PC;
-    Utils.value_hex (State.Bus.get8 st st.regs._PC);
-    Utils.value_hex (State.Bus.get8 st (st.regs._PC + 1));
-    Utils.value_hex (State.Bus.get8 st (st.regs._PC + 2));
+    (* print_endline "========= FETCH_DECODE START =========";
+    State.print_instructions st;
     State.print_registers st;
     State.print_interrupts st;
     Utils.print_hex "LCDC" st.gpu_mem.lcd_regs.lcdc;
     Utils.print_hex "STAT" st.gpu_mem.lcd_regs.stat;
-    let _ = if st.regs._SP != 0xFFFF then
-    Utils.print_hex "Value at SP" @@ State.get_SPp st else () in
-    Utils.print_hex "Value at HL" @@ State.get_HLp st;
     Utils.print_hex "LY" st.gpu_mem.lcd_regs.ly;
     Utils.print_hex "LYC" st.gpu_mem.lcd_regs.lyc;
-    let _ = if st.regs._PC = 0x07f4 then read_line () else "" in
-    (* let _ = if st.regs._PC = 0x0048 then let _ = print_endline "handler" in read_line () else "" in *)
+    let _ = if st.regs._PC = 0x07f4 then read_line () else "" in *)
 
     match State.Bus.get8 st st.regs._PC with
     | 0x00 -> Instruction.iNOP, 1
@@ -592,8 +586,7 @@ module Make (State : State.S) : S = struct
         in
         begin match addr with
         | 0 -> st, fetch_decode st
-        | n -> Utils.print_hex "Servicujemy interrupt" n;
-        st, (Instruction.interrupt_service_routine n, 0)
+        | n -> st, (Instruction.interrupt_service_routine n, 0)
         end
       | Enabling -> { st with ime = Enabled }, fetch_decode st
       | Disabled -> st, fetch_decode st
@@ -601,12 +594,6 @@ module Make (State : State.S) : S = struct
     execute instr st length
 
   let poll_interrupts_halted (st : State.t) =
-    (* print_endline "pollujemy interrupty";
-    Utils.print_hex "LCDC" st.gpu_mem.lcd_regs.lcdc;
-    Utils.print_hex "STAT" st.gpu_mem.lcd_regs.stat;
-    Utils.print_hex "LY" st.gpu_mem.lcd_regs.ly;
-    Utils.print_hex "LYC" st.gpu_mem.lcd_regs.lyc;
-    State.print_interrupts st; *)
     let st, addr, (act : State.cpu_activity) =
       match st.ime with
       | Enabled ->
@@ -633,10 +620,7 @@ module Make (State : State.S) : S = struct
     | Running, 0x00  -> fetch_decode_execute st
     | Running, n     -> execute (Instruction.interrupt_service_routine n) st 0
     | Halted (-1), _ -> st, 1
-    | Halted 1, _    ->     Utils.print_hex "3 next values at PC when exiting halt:" st.regs._PC;
-    Utils.value_hex (State.Bus.get8 st st.regs._PC);
-    Utils.value_hex (State.Bus.get8 st (st.regs._PC + 1));
-    Utils.value_hex (State.Bus.get8 st (st.regs._PC + 2));{ st with activity = Running }, 1
+    | Halted 1, _    -> { st with activity = Running }, 1
     | Halted n, _    -> { st with activity = Halted (n-1) }, 1
 
 
@@ -662,10 +646,8 @@ module Make (State : State.S) : S = struct
       (* ppu *)
       let st, render = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
       st, State.mc_to_time st mc, render
-      (* w "mainie" bedizemy dodawac st ppu do listy debuggera, oraz wyswietlac kolejne piksele z ppu *)
     | Halted _ ->
       (* check for interrupt *)
-      (* Utils.print_hex "Halted loop PC state" st.regs._PC; *)
       let st, mc = poll_interrupts_halted st in
       (* timer *)
       (* run div *)
@@ -696,7 +678,11 @@ module Make (State : State.S) : S = struct
     let initial_state = State.load_rom (State.init_cgb State.initial) rom in
     initial_state
 
+  let print_instructions = State.print_instructions
+
   let print_registers = State.print_registers
+
+
   let print_interrupts = State.print_interrupts
   let print_palettes = State.print_palettes
 

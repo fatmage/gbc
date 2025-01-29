@@ -178,14 +178,10 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
 
   let render_obj_line () =
-    let len = List.length !sprite_buffer in
     let draw_obj obj_prio ({ x_p; p1; p2 ; palette; prio } : obj_data) =
-
       let lx = x_p - 8 in
       let p1 = ref p1 in
       let p2 = ref p2 in
-      let obj_prio = len - obj_prio in
-      (* print_endline @@ Printf.sprintf "rysujemy obiekt %d na pozycji %d" obj_prio lx; *)
       for i = 0 to 7 do
         begin
         if (lx + i) >= 0 && (lx + i) < screen_w then
@@ -199,21 +195,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     List.iteri draw_obj !sprite_buffer
 
   let push_pixel y x arr palette color =
-    (* print_endline "push pixel";
-    Utils.print_dec "y" y;
-    Utils.print_dec "x" x;
-    Utils.print_dec "palette" palette;
-    Utils.print_dec "color" color; *)
-    let v = State.GPUmem.Palettes.lookup_arr arr palette color in
-
-    (* Utils.print_dec "x" x;
-    Utils.print_hex "Pixel rgb" v; *)
-    (* if y = 5 && (x >= 120 && x <= 127) then let _ = read_line () in () else (); *)
-
-    framebuffer.(y).(x) <- v
-    (* print_endline "przeszlo" *)
-
-
+    framebuffer.(y).(x) <- State.GPUmem.Palettes.lookup_arr arr palette color
 
   let render_line (st : state) =
     let bgw_palette = State.GPUmem.Palettes.bgw_array st.gpu_mem.palettes in
@@ -222,14 +204,9 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     render_bgw_line st ly;
     begin
     if State.GPUmem.LCD_Regs.obj_enabled st.gpu_mem.lcd_regs then
-      (* State.GPUmem.OAM.print_oam st.gpu_mem.oam; *)
-      (* let _ = read_line () in *)
       render_obj_line ()
-      (* () *)
     end;
-    (* print_scanned !sprite_buffer; *)
     for i = 0 to screen_w - 1 do
-      (* let _ = if ly = 0 then read_line () else "" in *)
       match bgw_buffer.(i), obj_buffer.(i), State.GPUmem.LCD_Regs.bgwindow_ep st.gpu_mem.lcd_regs with
       (* No object pixel *)
       | { color = bwcolor; palette; _}, {color = -1; _}, _ ->

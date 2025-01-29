@@ -226,8 +226,6 @@ let mbc5 ram_banks : (module S) = (module struct
     | _ when in_high i ->
       Bytes.get m.rom (addr_high m i) |> int_of_char
     | _ (* when in_ram i *) ->
-      (* Utils.print_hex i;
-      Utils.print_hex (addr_ram m i); *)
       if m.ram_enabled then RAM.get m.ram (addr_ram m i) else 0xFF
 
 

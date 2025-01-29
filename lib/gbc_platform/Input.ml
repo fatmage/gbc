@@ -5,8 +5,8 @@ type gbc_control = { start : bool; select: bool; b : bool; a : bool; down : bool
 type button = Start | Select | B | A | Down | Up | Left | Right
 let gbc_input = ref { start = true; select = true; b = true; a = true; down = true; up = true; left = true; right = true }
 
-type dbg_control = { back : bool; forward : bool; modifier : bool }
-let dbg_input = ref { back = false; forward = false; modifier = false }
+type dbg_control = { back : bool; forward : bool; ctrl : bool; alt : bool }
+let dbg_input = ref { back = false; forward = false; ctrl = false; alt = false }
 let switch_mode = ref false
 
 let dpad_to_int () =
@@ -101,7 +101,8 @@ let handle_debugger_events () =
       begin match Sdl.Scancode.enum scancode with
       | `Escape -> exit 0
       | `Space  -> switch_mode := true
-      | `Lctrl  -> dbg_input := { !dbg_input with modifier = true }
+      | `Lctrl  -> dbg_input := { !dbg_input with ctrl= true }
+      | `Lalt   -> dbg_input := { !dbg_input with alt = true }
       | `Left   -> dbg_input := { !dbg_input with back = true }
       | `Right  -> dbg_input := { !dbg_input with forward = true }
       | _ -> ()
@@ -117,7 +118,8 @@ let handle_debugger_events () =
       | `L -> switch_button A
       | `Return -> switch_button Start
       | `Lshift -> switch_button Select
-      | `Lctrl -> dbg_input := { !dbg_input with modifier = false }
+      | `Lctrl  -> dbg_input := { !dbg_input with ctrl = false }
+      | `Lalt   -> dbg_input := {!dbg_input with alt = false}
       | _ -> ()
       end
     | `Quit -> exit 0

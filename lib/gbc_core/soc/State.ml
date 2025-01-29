@@ -74,6 +74,7 @@ module type S = sig
 
   (* Debugging functions *)
 
+  val print_instructions : t -> unit
   val print_registers : t -> unit
   val print_interrupts : t -> unit
   val print_palettes : t -> unit
@@ -119,8 +120,6 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       let eq_after = GPUmem.LCD_Regs.lyc_ly_eq lcd_regs in
       let st = { st with gpu_mem = { st.gpu_mem with lcd_regs } } in
       if (not eq_before) && eq_after && GPUmem.LCD_Regs.lyc_cond st.gpu_mem.lcd_regs then
-        let _ = print_endline "zrequestowalismy lcd stat" in
-        let _ = read_line () in
         request_LCD st
       else
         st
@@ -319,9 +318,18 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
 
   let mc_to_time st mc = (float_of_int mc) *. (Timer.tmul st.timer)
 
+
+  let print_instructions st =
+    Utils.print_hex "3 next values at PC" st.regs._PC;
+    Utils.value_hex (Bus.get8 st st.regs._PC);
+    Utils.value_hex (Bus.get8 st (st.regs._PC + 1));
+    Utils.value_hex (Bus.get8 st (st.regs._PC + 2))
   let print_registers st =
     print_endline "Registers:";
-    Regs.print_registers st.regs
+    Regs.print_registers st.regs;
+    Utils.print_hex "Value at HL" @@ get_HLp st;
+    if st.regs._SP != 0xFFFF then
+    Utils.print_hex "Value at SP" @@ get_SPp st
 
   let print_interrupts st =
     print_endline "Interrupts";

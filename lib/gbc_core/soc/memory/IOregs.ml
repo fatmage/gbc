@@ -24,25 +24,15 @@ module Joypad = struct
     | 0b000000 -> 0xC0 lor m.buttons
 
   let set m _ v =
-    (* Utils.print_hex "Setujemy joypad" v; *)
-    (* let _ = read_line () in *)
     { m with chosen = v land 0x30 }
 
-  let set_input m b d =
-    (* print_endline "setujemy joypad";
-    Utils.print_hex "Chosen" m.chosen;
-    Utils.print_hex "B" b;
-    Utils.print_hex "D" d; *)
-    (* Utils.print_hex "Buttons" m.buttons; *)
-    (* Utils.print_hex "Dpad" m.dpad; *)
-
-    match b, d with
-    | buttons, dpad when b = m.buttons && d = m.dpad ->
-      (* print_endline "no change"; *)
+  let set_input m buttons dpad =
+    match buttons, dpad with
+    | buttons, dpad when buttons = m.buttons && dpad = m.dpad ->
       m
-    | buttons, _ when d = m.dpad ->
+    | buttons, _ when dpad = m.dpad ->
       { m with buttons }
-    | _, dpad when b = m.buttons ->
+    | _, dpad when buttons = m.buttons ->
       { m with dpad }
     | buttons, dpad ->
       { m with buttons; dpad }

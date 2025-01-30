@@ -124,27 +124,9 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     render_bg_line st ly tile_data_area;
     if State.GPUmem.LCD_Regs.window_enabled st.gpu_mem.lcd_regs then
       render_w_line st ly tile_data_area
-      (* () *)
-
-  let bool_to_int b =
-    if b then 1 else 0
-
-  let print_scanned (m : obj_data list) =
-    let print_obj i ({x_p; p1; p2; palette; prio} : obj_data) =
-      print_endline @@ Printf.sprintf "Obj %d - x: %02X, p1: %02X, p2: %02X, pal: %02X, prio: %d" i x_p p1 p2 palette (bool_to_int prio)
-    in
-    List.iteri print_obj m
-
-  let print_pixel i { color;  palette; sprite_prio; prio } =
-    print_endline @@ Printf.sprintf "Pixel %d - col: %d; pal: %d, sprio: %d, prio: %d" i color palette sprite_prio (bool_to_int prio)
-
 
   let scan_oam (st : state) =
     sprite_buffer := State.GPUmem.scan_oam st.gpu_mem st.gpu_mem.lcd_regs.ly
-
-
-
-
 
   let render_obj_line () =
     let draw_obj obj_prio ({ x_p; p1; p2 ; palette; prio } : obj_data) =

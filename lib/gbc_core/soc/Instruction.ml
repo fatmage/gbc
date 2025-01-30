@@ -368,9 +368,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Next, 2
 
   let iBIT_u3HLp u : instruction = fun st ->
-    (* print_endline "zaczynamy u3HLp"; *)
     let hlp = State.get_HLp st in
-    (* print_endline "wzielismy hlp w bit"; *)
     State.set_flags st ~z:(hlp land (1 lsl u) = 0) ~n:false ~h:true (),
     Next, 3
 
@@ -799,7 +797,6 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           if State.interrupts_pending state > 0 then 1 else 2
       end
     | _    ->
-      print_endline "joypad pressed";
       if State.interrupts_pending state > 0 then
         iNOP, 1
       else

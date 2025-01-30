@@ -20,14 +20,11 @@ module MakeOAM (State : State.S) : (S with type state = State.t) = struct
 
 end
 
-(* TODO: HDMA *)
-
 module MakeVRAM (State : State.S) : (S with type state = State.t) = struct
   type state = State.t
 
   let exec_dma (st : state) _ =
     let in_progress = DMAState.VRAM.in_progress st.dma_vram in
-    let mode = DMAState.VRAM.mode st.dma_vram in
     match st.activity, in_progress with
     | Halted _, _| Stopped, _ -> st, 0
     | Running, false -> st, 0
@@ -47,7 +44,7 @@ module MakeVRAM (State : State.S) : (S with type state = State.t) = struct
         { st with dma_vram = { st.dma_vram with hdma5 = 0xFF; in_progress = false }}, mcyc
       | false -> (* HBlank*)
         match State.GPUmem.get_mode st.gpu_mem with
-        | HBlank (c, m) ->
+        | HBlank (_, _) ->
           let st = transfer st src dst 0x10 in
           let mcyc = if State.get_speed st then 0x10 else 0x8 in
           let length = length - 0x10 in

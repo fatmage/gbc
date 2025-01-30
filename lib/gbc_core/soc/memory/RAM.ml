@@ -103,7 +103,7 @@ module WRAM = struct
 
   let set m i v =
     match m,i with
-    | {b0;bs;svbk}, 0xFF70 ->
+    | _, 0xFF70 ->
       { m with svbk = 0xF8 lor v }
     | {b0;_}, i when Bank0.in_range i ->
       { m with b0 = Bank0.set b0 i v }

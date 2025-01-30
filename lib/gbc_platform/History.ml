@@ -21,7 +21,7 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
 
   let empty = [], 0
 
-  let is_empty (xs, n) = List.is_empty xs
+  let is_empty (_, n) = n = 0
 
   let add_state xs st vblank =
     match xs with
@@ -42,7 +42,7 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
     match i with
     | _ when i >= n -> st, is_new
     | _ ->
-      let st, _, vblank = GBC.cpu_step st in
+      let st, _, _ = GBC.cpu_step st in
       match is_old with
       | [] ->
         replay st n is_old is_new (i+1)
@@ -58,35 +58,35 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
     | [(st, 0, is)], l -> st, ([(st, 0, is)], l)
     | [(st, n, is)], l ->
       let is_chrono = List.rev is in
-      let st', new_is = replay st (n-1) is [] 0 in
+      let st', new_is = replay st (n-1) is_chrono [] 0 in
       st', ([(st, n-1, new_is)], l)
-    | (st1, 0, is1) :: (st2, n2, is2) :: xs, l ->
+    | (_, 0, _) :: (st2, n2, is2) :: xs, l ->
       let is2_chrono = List.rev is2 in
-      let st, _ = replay st2 n2 is2 [] 0 in
+      let st, _ = replay st2 n2 is2_chrono [] 0 in
       st, ((st2, n2, is2) :: xs, l - 1)
     | (st1, n1, is1) :: (st2, n2, is2) :: xs, l ->
       let is2_chrono = List.rev is2 in
-      let st1', _ = replay st2 (n2+1) is2 [] 0 in
+      let _, _ = replay st2 (n2+1) is2_chrono [] 0 in
       let is1_chrono = List.rev is1 in
-      let st, new_is1 = replay st1 (n1-1) is1 [] 0 in
+      let st, new_is1 = replay st1 (n1-1) is1_chrono [] 0 in
       st, ((st1, n1-1, new_is1) :: (st2, n2, is2) :: xs, l)
 
   let move_back_frame =
     function
-    | [st, n, is], 1 | [(_, 0, _); (st, n, is)], 2 -> st, ([st, 0, []], 1)
-    | (st1, 0, is1) :: (st2, n2, is2) :: (st3, n3, is3) :: xs, l ->
+    | [st, _, _], 1 | [(_, 0, _); (st, _, _)], 2 -> st, ([st, 0, []], 1)
+    | (_, 0, _) :: (st2, _, _) :: (st3, n3, is3) :: xs, l ->
       let is3_chrono = List.rev is3 in
-      let _, _ = replay st3 (n3+1) is3 [] 0 in
+      let _, _ = replay st3 (n3+1) is3_chrono [] 0 in
       st2, ((st2, 0, []) :: (st3, n3, is3) :: xs, l - 1)
-    | (st1, n1, is1) :: (st2, n2, is2) :: xs, l ->
+    | (st1, _, _) :: (st2, n2, is2) :: xs, l ->
       let is2_chrono = List.rev is2 in
-      let _, _ = replay st2 (n2+1) is2 [] 0 in
+      let _, _ = replay st2 (n2+1) is2_chrono [] 0 in
       st1, ((st1, 0, []) :: (st2, n2, is2) :: xs, l)
 
   let move_back_second history =
     let rec aux history i =
       match history, i with
-      | ([(st,n,is)], l), _  -> st, ([(st, 0, [])], l)
+      | ([(st,_,_)], l), _  -> st, ([(st, 0, [])], l)
       | history, 0      -> move_back_frame history
       | (_ :: history, l), i -> aux (history, l - 1) (i-1)
     in

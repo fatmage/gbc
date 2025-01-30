@@ -163,11 +163,18 @@ module Palettes_CGB : Palettes_intf = struct
   let print_palettes palettes =
     let bgw_arr = bgw_array palettes in
     let obj_arr = obj_array palettes in
-    print_endline "Palettes";
+    print_endline "Background palettes";
     for i = 0 to 7 do
       Utils.print_dec "palette" i;
       for j = 0 to 3 do
         Utils.print_hex "color" (lookup_arr bgw_arr i j)
+      done;
+    done;
+    print_endline "Object palettes";
+    for i = 0 to 7 do
+      Utils.print_dec "palette" i;
+      for j = 0 to 3 do
+        Utils.print_hex "color" (lookup_arr obj_arr i j)
       done;
     done
 
@@ -179,9 +186,7 @@ module Make (M : Palettes_intf) : S = struct
 
   module Palettes = M
 
-  (* TODO - maybe optimise *)
   module OAM = struct
-
     type object_data = { y_p : int; x_p : int; t_index : int; flags : int }
 
     let obj_empty = { y_p = 0; x_p = 0; t_index = 0; flags = 0 }
@@ -270,11 +275,11 @@ module Make (M : Palettes_intf) : S = struct
 
     let tile_aux_addr area y x = (area + ((y/8) * 32) + (x/8))
 
-    let get_tile_index (b0, b1, _) area y x =
+    let get_tile_index (b0, _, _) area y x =
       let addr = tile_aux_addr area y x in
       Bank.get b0 addr
 
-    let get_tile_attributes (b0, b1, _) area y x =
+    let get_tile_attributes (_, b1, _) area y x =
       let addr = tile_aux_addr area y x in
       Bank.get b1 addr
 

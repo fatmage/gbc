@@ -48,9 +48,31 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
       let time = Sys.time () in
       emulator_loop st history time 0. 0. texture renderer
     else
+      let rec move_forward st history =
+        function
+        | false ->
+          let buttons, dpad = Input.set_joypad () in
+          let st = GBC.State.set_joypad st buttons dpad  in
+          let st, _, frame_end = GBC.cpu_step st in
+          let buttons, dpad = Input.set_joypad () in
+          let st = GBC.State.set_joypad st buttons dpad  in
+          let history = History.add_state history st frame_end in
+          st, history
+        | true ->
+          let buttons, dpad = Input.set_joypad () in
+          let st = GBC.State.set_joypad st buttons dpad in
+          let st, _, frame_end = GBC.cpu_step st in
+          if frame_end then
+            let buttons, dpad = Input.set_joypad () in
+            let st = GBC.State.set_joypad st buttons dpad in
+            let history = History.add_state history st frame_end in
+            st, history
+          else
+            move_forward st history true
+      in
       match !Input.dbg_input with
       | { back = true; ctrl; alt;_ } ->
-        Input.dbg_input := { !Input.dbg_input with back= false };
+        Input.dbg_input := { !Input.dbg_input with back = false };
         let move_back hs =
           if ctrl then
             let _ = print_endline "Moving back one frame" in
@@ -69,17 +91,11 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
         GBC.print_registers st;
         GBC.print_interrupts st;
         debugger_loop st history texture renderer
-      | { forward = true;  _ } ->
+      | { forward = true; ctrl; _ } ->
         Input.dbg_input := { !Input.dbg_input with forward = false };
-        let buttons, dpad = Input.set_joypad () in
-        let st = GBC.State.set_joypad st buttons dpad  in
-        let st, _, frame_end = GBC.cpu_step st in
-        let buttons, dpad = Input.set_joypad () in
-        let st = GBC.State.set_joypad st buttons dpad  in
+        let st, history = move_forward st history ctrl in
         GBC.print_registers st;
         GBC.print_interrupts st;
-        (* Final state in this step *)
-        let history = History.add_state history st frame_end in
         debugger_loop st history texture renderer
       | _ -> debugger_loop st history texture renderer
 

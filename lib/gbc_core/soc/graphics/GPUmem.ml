@@ -172,7 +172,7 @@ module Palettes_CGB : Palettes_intf = struct
     done
 
 
-  let in_range i = (0xFF47 <= i && i <= 0xFF48) || (0xFF68 <= i && i <= 0xFF6B)
+  let in_range i = (0xFF47 <= i && i <= 0xFF49) || (0xFF68 <= i && i <= 0xFF6B)
 end
 
 module Make (M : Palettes_intf) : S = struct

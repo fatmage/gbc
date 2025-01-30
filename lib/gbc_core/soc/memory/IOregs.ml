@@ -55,15 +55,15 @@ end
 
 (* TODO *)
 module Serial = struct
-  type t = { sb : int; sc : int }
-  let initial = { sb = 0; sc = 0x7F }
+  type t = { sb : int; sc : int; rp : int }
+  let initial = { sb = 0; sc = 0x7F; rp = 0}
   let get m i =
     match i with
     | 0xFF01 -> m.sb
     | 0xFF02 -> m.sc
     | _ -> assert false
   let set m _ _ = m
-  let in_range v = v = 0xFF01 || v = 0xFF02
+  let in_range v = v = 0xFF01 || v = 0xFF02 || v = 0xFF56
 end
 
 module Timer = struct

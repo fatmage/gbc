@@ -169,19 +169,19 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       | _ when WavePattern.in_range addr (* Wave pattern *)
         -> WavePattern.get st.wave addr
       (* LCD control *)
+      | _ when DMAState.OAM.in_range addr
+      -> DMAState.OAM.get st.dma_oam addr
       (* VRAM bank select *)
       (* 0xFF50 - set to non-zero to disable boot ROM *)
       (* VRAM DMA *)
+      | _ when DMAState.VRAM.in_range addr
+      -> DMAState.VRAM.get st.dma_vram addr
       (* BG/OBJ palettes *)
       (* WRAM bank select *)
       | _ when RAM.HRAM.in_range addr (* HRAM *)
         -> RAM.HRAM.get st.hram addr
       | _ when IE.in_range addr (* Interrupt Enable register *)
         -> IE.get st.ie addr
-      | _ when DMAState.VRAM.in_range addr
-        -> DMAState.VRAM.get st.dma_vram addr
-      | _ when DMAState.OAM.in_range addr
-        -> DMAState.OAM.get st.dma_oam addr
       | _ when addr <= 0xFFFF
         -> Utils.print_hex "Bus get warning: unusable memory" addr; 0xFF
       | _
@@ -247,16 +247,6 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
         -> Utils.print_hex "Bus set warning: unusable memory" addr; st
       | _
         -> Utils.fail_addr "Bus set error: address out of range" addr
-      in
-      let _ =
-          if addr = 0xff80 && st.regs._PC = 0xc088 then
-          (* let _ = print_endline "======== SETTING FF80 ========" in
-          let _ = Utils.print_hex "Set value" v in
-          let _ = Utils.print_hex "Result" @@ get8 st addr in *)
-          (* let _ = read_line () in *)
-          ()
-        else
-          ()
       in
       st
 

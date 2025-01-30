@@ -20,7 +20,7 @@ module Make (State : State.S) : S = struct
   module PPU = PPU.Make (State)
   module Instruction = Instruction.Make (State)
   module DMA_OAM = DMAUnit.MakeOAM (State)
-  module DMA_VRAM = DMAUnit.MakeOAM (State)
+  module DMA_VRAM = DMAUnit.MakeVRAM (State)
   let match_prefixed st =
     match State.Bus.get8 st (st.regs._PC + 1) with
     | 0x00 -> Instruction.iRLC_r8 B

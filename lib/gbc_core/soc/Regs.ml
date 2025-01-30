@@ -1,40 +1,58 @@
 open Utils
 
-type r8  = A | B | C | D | E | H | L
+type r8 = A | B | C | D | E | H | L
 type r16 = AF | BC | DE | HL | SP | PC
 type flag = Flag_z | Flag_n | Flag_h | Flag_c
 
 type flags = {
-  z : bool (* bit *); n : bool (* bit *); h : bool (* bit *); c : bool; (* bit *)
+  z : bool; (* bit *)
+  n : bool; (* bit *)
+  h : bool; (* bit *)
+  c : bool; (* bit *)
 }
 
 type regfile = {
-  _A : int (* u8 *); _B : int (* u8 *); _C : int (* u8 *); _D : int (* u8 *);
-  _E : int (* u8 *); _H : int (* u8 *); _L : int (* u8 *);
-  _AF : int (* u16 *); _BC : int (* u16 *); _DE : int (* u16 *);
-   _HL: int (* u16 *); _SP : int (* u16 *); _PC : int (* u16 *);
-   flags : flags
+  _A : int; (* u8 *)
+  _B : int; (* u8 *)
+  _C : int; (* u8 *)
+  _D : int; (* u8 *)
+  _E : int; (* u8 *)
+  _H : int; (* u8 *)
+  _L : int; (* u8 *)
+  _AF : int; (* u16 *)
+  _BC : int; (* u16 *)
+  _DE : int; (* u16 *)
+  _HL : int; (* u16 *)
+  _SP : int; (* u16 *)
+  _PC : int; (* u16 *)
+  flags : flags;
+}
+
+let initial_flags = { z = true; n = false; h = false; c = false }
+
+let initial_regfile =
+  {
+    _A = 0;
+    _B = 0;
+    _C = 0;
+    _D = 0;
+    _E = 0;
+    _H = 0;
+    _L = 0;
+    _AF = 0;
+    _BC = 0;
+    _DE = 0;
+    _HL = 0;
+    _SP = 0;
+    _PC = 0;
+    flags = initial_flags;
   }
 
-
-
-let initial_flags = {
-  z = true; n = false; h = false; c = false
-}
-
-let initial_regfile = {
-  _A = 0; _B = 0; _C = 0; _D = 0;
-  _E = 0; _H = 0; _L = 0;
-  _AF = 0; _BC = 0; _DE = 0; _HL= 0;
-  _SP = 0; _PC = 0;
-  flags = initial_flags
-}
-
-let flags_to_int {z;n;h;c} =
+let flags_to_int { z; n; h; c } =
   let seventh = if z then 0b10000000 else 0 in
-  let sixth   = if n then 0b01000000 else 0 in
-  let fifth   = if h then 0b00100000 else 0 in
-  let fourth  = if c then 0b00010000 else 0 in
+  let sixth = if n then 0b01000000 else 0 in
+  let fifth = if h then 0b00100000 else 0 in
+  let fourth = if c then 0b00010000 else 0 in
   seventh lor sixth lor fifth lor fourth
 
 let int_to_flags v =
@@ -43,7 +61,6 @@ let int_to_flags v =
   let h = v land 0b00100000 > 0 in
   let c = v land 0b00010000 > 0 in
   { z; n; h; c }
-
 
 let set_r8 rf r v =
   match r with
@@ -76,7 +93,7 @@ let get_r8 rf r =
 
 let get_r16 rf rr =
   match rr with
-  | AF -> (rf._A lsl 8) lor (flags_to_int rf.flags)
+  | AF -> (rf._A lsl 8) lor flags_to_int rf.flags
   | BC -> rf._BC
   | DE -> rf._DE
   | HL -> rf._HL
@@ -100,15 +117,12 @@ let set_flag rs f v =
 let initial_regfile_cgb =
   let aux8 r v rf = set_r8 rf r v in
   let aux16 r v rf = set_r16 rf r v in
-  initial_regfile |> (aux8 A 0x11) |> (aux8 D 0xFF) |> (aux8 E 0x56) |>
-  (aux8 L 0x0D) |> (aux16 PC 0x100) |> (aux16 SP 0xFFFE)
+  initial_regfile |> aux8 A 0x11 |> aux8 D 0xFF |> aux8 E 0x56 |> aux8 L 0x0D
+  |> aux16 PC 0x100 |> aux16 SP 0xFFFE
 
-
-let print_flags {z;n;h;c} =
-  print_endline @@
-    "z:" ^ (string_of_bool z) ^ " n:" ^ (string_of_bool n) ^
-    " h:" ^ (string_of_bool h) ^ " c:" ^ (string_of_bool c)
-
+let print_flags { z; n; h; c } =
+  print_endline @@ "z:" ^ string_of_bool z ^ " n:" ^ string_of_bool n ^ " h:"
+  ^ string_of_bool h ^ " c:" ^ string_of_bool c
 
 let print_registers regs =
   Utils.print_hex "AF" @@ get_r16 regs AF;

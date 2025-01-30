@@ -1,3 +1,4 @@
 (env
-  (dev
-    (flags (:standard -w -8))))
+ (dev
+  (flags
+   (:standard -w -8))))

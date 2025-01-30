@@ -65,8 +65,9 @@ module type S = sig
   val check_ly_lyc : t -> t
   val update_mode : t -> GPUmode.t -> t
   val change_mode : t -> GPUmode.t -> t
-  val get_joypad : t -> int
-  val set_joypad : t -> int -> t
+  val joypad_diff : t -> int -> int -> bool
+  val get_joypad : t -> int * int
+  val set_joypad : t -> int -> int -> t
   val load_rom : t -> bytes -> t
   val init_dmg : t -> t
   val init_cgb : t -> t
@@ -142,7 +143,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     *)
 
     let get8 st addr =
-      match addr with
+      let v = match addr with
       | _ when Cartridge.in_range addr (* ROM + external RAM *)
         -> Cartridge.get st.cartridge addr
       | _ when GPUmem.in_range addr (* VRAM, OAM, LCD control, palettes *)
@@ -185,6 +186,17 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
         -> Utils.print_hex "Bus get warning: unusable memory" addr; 0xFF
       | _
         -> Utils.fail_addr "Bus get error: address out of range" addr
+      in
+      let _ =
+        if addr = 0xD61D then
+        let _ = print_endline "======== GETTING D61D ========" in
+        let _ = Utils.print_hex "Get value" v in
+        (* let _ = read_line () in *)
+        ()
+      else
+        ()
+    in
+      v
 
 
     let set8 st addr v =
@@ -236,6 +248,16 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
       | _
         -> Utils.fail_addr "Bus set error: address out of range" addr
       in
+      let _ =
+          if addr = 0xff80 && st.regs._PC = 0xc088 then
+          (* let _ = print_endline "======== SETTING FF80 ========" in
+          let _ = Utils.print_hex "Set value" v in
+          let _ = Utils.print_hex "Result" @@ get8 st addr in *)
+          (* let _ = read_line () in *)
+          ()
+        else
+          ()
+      in
       st
 
     let get16 st addr =
@@ -272,12 +294,12 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   let set_flags st
     ?(z=st.regs.flags.z) ?(n=st.regs.flags.n)
     ?(h=st.regs.flags.h) ?(c=st.regs.flags.c) () =
-    { st with regs = { st.regs with flags = { z; n; h; c; low_nibble = st.regs.flags.low_nibble } } }
+    { st with regs = { st.regs with flags = { z; n; h; c } } }
 
   let get_A st = st.regs._A
-  let set_A st v = { st with regs = { st.regs with _A = v } }
+  let set_A st v = set_r8 st A v
   let get_HL st = st.regs._HL
-  let set_HL st v = { st with regs = { st.regs with _HL = v } }
+  let set_HL st v = set_r16 st HL v
   let get_HLp st = Bus.get8 st st.regs._HL
   let set_HLp st v = Bus.set8 st st.regs._HL v
 
@@ -298,8 +320,10 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   let update_mode st mode = { st with gpu_mem = GPUmem.update_mode st.gpu_mem mode }
   let change_mode st mode = { st with gpu_mem = GPUmem.change_mode st.gpu_mem mode }
 
-  let get_joypad st = st.joypad
-  let set_joypad st v = { st with joypad = IOregs.Joypad.set_input st.joypad v }
+  let joypad_diff st b d = IOregs.Joypad.joypad_diff st.joypad b d
+  let get_joypad st = IOregs.Joypad.get_input st.joypad
+  let set_joypad st b d =
+    let joypad = IOregs.Joypad.set_input st.joypad b d in { st with joypad }
 
   let load_rom st rom = { st with cartridge = Cartridge.load_rom st.cartridge rom }
 

@@ -14,7 +14,7 @@ end
 module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
 
   type state = GBC.State.t
-  type input_entry =  { joypad : int; step : int }
+  type input_entry =  { buttons : int; dpad : int; step : int }
   type input_history = input_entry list
   type entry = state * int * input_history
   type t = entry list
@@ -30,12 +30,12 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
       match vblank with
       | true  -> (st, 0, []) :: xs
       | false ->
-        let old_joypad = GBC.State.get_joypad pst in
-        let joypad = GBC.State.get_joypad st  in
-        if old_joypad = joypad then
-          (pst, n + 1, is) :: states
+        let buttons, dpad = GBC.State.get_joypad st in
+        let jp_changed = GBC.State.joypad_diff pst buttons dpad in
+        if jp_changed then
+          (pst, n + 1, { buttons; dpad; step = n } :: is) :: states
         else
-          (pst, n + 1, { joypad; step = n } :: is) :: states
+          (pst, n + 1, is) :: states
 
   let rec replay st n is_old is_new i =
     match i with
@@ -45,10 +45,10 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
       match is_old with
       | [] ->
         replay st n is_old is_new (i+1)
-      | { joypad; step } :: is ->
+      | { buttons; dpad; step } :: is ->
         if step = i then
-          let st = GBC.State.set_joypad st joypad in
-          replay st n is ({joypad;step} ::is_new) (i+1)
+          let st = GBC.State.set_joypad st buttons dpad in
+          replay st n is ({buttons;dpad;step} ::is_new) (i+1)
         else
           replay st n is_old is_new (i+1)
 
@@ -93,7 +93,7 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
 
 end
 
-module MakeSparse (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
+module MakeDense (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
 
   type state = GBC.State.t
   type t = state list

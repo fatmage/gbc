@@ -3,7 +3,7 @@ open Tsdl
 type gbc_control = { start : bool; select: bool; b : bool; a : bool; down : bool; up : bool; left : bool; right : bool }
 
 type button = Start | Select | B | A | Down | Up | Left | Right
-let gbc_input = ref { start = true; select = true; b = true; a = true; down = true; up = true; left = true; right = true }
+let gbc_input = ref { start = false; select = false; b = false; a = false; down = false; up = false; left = false; right = false }
 
 type dbg_control = { back : bool; forward : bool; ctrl : bool; alt : bool }
 let dbg_input = ref { back = false; forward = false; ctrl = false; alt = false }
@@ -25,17 +25,6 @@ let bttn_to_int () =
 
 let press_button =
   function
-  | Start  -> gbc_input := { !gbc_input with start = false }
-  | Select -> gbc_input := { !gbc_input with select = false }
-  | B      -> gbc_input := { !gbc_input with b = false }
-  | A      -> gbc_input := { !gbc_input with a = false }
-  | Down   -> gbc_input := { !gbc_input with down = false }
-  | Up     -> gbc_input := { !gbc_input with up = false }
-  | Left   -> gbc_input := { !gbc_input with left = false }
-  | Right  -> gbc_input := { !gbc_input with right = false }
-
-let release_button =
-  function
   | Start  -> gbc_input := { !gbc_input with start = true }
   | Select -> gbc_input := { !gbc_input with select = true }
   | B      -> gbc_input := { !gbc_input with b = true }
@@ -45,16 +34,27 @@ let release_button =
   | Left   -> gbc_input := { !gbc_input with left = true }
   | Right  -> gbc_input := { !gbc_input with right = true }
 
+let release_button =
+  function
+  | Start  -> gbc_input := { !gbc_input with start = false }
+  | Select -> gbc_input := { !gbc_input with select = false }
+  | B      -> gbc_input := { !gbc_input with b = false }
+  | A      -> gbc_input := { !gbc_input with a = false }
+  | Down   -> gbc_input := { !gbc_input with down = false }
+  | Up     -> gbc_input := { !gbc_input with up = false }
+  | Left   -> gbc_input := { !gbc_input with left = false }
+  | Right  -> gbc_input := { !gbc_input with right = false }
+
 let switch_button =
   function
-  | Start  -> gbc_input := { !gbc_input with start = not !gbc_input.start }
-  | Select -> gbc_input := { !gbc_input with select = not !gbc_input.select }
-  | B      -> gbc_input := { !gbc_input with b = not !gbc_input.b }
-  | A      -> gbc_input := { !gbc_input with a = not !gbc_input.a }
-  | Down   -> gbc_input := { !gbc_input with down = not !gbc_input.down }
-  | Up     -> gbc_input := { !gbc_input with up = not !gbc_input.up }
-  | Left   -> gbc_input := { !gbc_input with left = not !gbc_input.left }
-  | Right  -> gbc_input := { !gbc_input with right = not !gbc_input.right }
+  | Start  -> gbc_input := { !gbc_input with start = not !gbc_input.start }; print_endline "start switch"
+  | Select -> gbc_input := { !gbc_input with select = not !gbc_input.select }; print_endline "select switch"
+  | B      -> gbc_input := { !gbc_input with b = not !gbc_input.b }; print_endline "b switch"
+  | A      -> gbc_input := { !gbc_input with a = not !gbc_input.a }; print_endline "a switch"
+  | Down   -> gbc_input := { !gbc_input with down = not !gbc_input.down }; print_endline "down switch"
+  | Up     -> gbc_input := { !gbc_input with up = not !gbc_input.up }; print_endline "up switch"
+  | Left   -> gbc_input := { !gbc_input with left = not !gbc_input.left }; print_endline "left switch"
+  | Right  -> gbc_input := { !gbc_input with right = not !gbc_input.right }; print_endline "right switch"
 
 let handle_emulator_events () =
   let event = Sdl.Event.create () in
@@ -126,9 +126,9 @@ let handle_debugger_events () =
     | _     -> ()
   done
 
-let set_joypad reg =
-  let high_nibble = reg land 0xF0 in
-  match reg land 0x30 with
-  | 0b10 -> high_nibble lor (bttn_to_int ())
-  | 0b01 -> high_nibble lor (dpad_to_int ())
-  | _    -> high_nibble lor 0x0F
+let set_joypad () =
+  (* print_endline "Joypad od emulatora"; *)
+  let b, d = bttn_to_int (), dpad_to_int () in
+  (* Printf.sprintf "Buttons: 0x%02X" b |> print_endline; *)
+  (* Printf.sprintf "Dpad: 0x%02X" d |> print_endline; *)
+  b, d

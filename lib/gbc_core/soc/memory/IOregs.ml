@@ -14,11 +14,42 @@
 *)
 
 module Joypad = struct
-  type t = int
-  let initial = 0xCF
-  let get m _ = m
-  let set m _ v = ((lnot m) land 0x30) lor 0x0F
-  let set_input _ v = v
+  type t = { chosen : int; buttons : int; dpad : int }
+  let initial = { chosen = 0b110000; buttons = 0xF; dpad = 0xF }
+  let get m _ =
+    match m.chosen with
+    | 0b110000 -> 0xCF
+    | 0b010000 -> 0xC0 lor m.buttons
+    | 0b100000 -> 0xC0 lor m.dpad
+    | 0b000000 -> 0xC0 lor m.buttons
+
+  let set m _ v =
+    (* Utils.print_hex "Setujemy joypad" v; *)
+    (* let _ = read_line () in *)
+    { m with chosen = v land 0x30 }
+
+  let set_input m b d =
+    (* print_endline "setujemy joypad";
+    Utils.print_hex "Chosen" m.chosen;
+    Utils.print_hex "B" b;
+    Utils.print_hex "D" d; *)
+    (* Utils.print_hex "Buttons" m.buttons; *)
+    (* Utils.print_hex "Dpad" m.dpad; *)
+
+    match b, d with
+    | buttons, dpad when b = m.buttons && d = m.dpad ->
+      (* print_endline "no change"; *)
+      m
+    | buttons, _ when d = m.dpad ->
+      { m with buttons }
+    | _, dpad when b = m.buttons ->
+      { m with dpad }
+    | buttons, dpad ->
+      { m with buttons; dpad }
+
+  let get_input m = m.buttons, m.dpad
+
+  let joypad_diff m b d = not (b = m.buttons && d = m.dpad)
   let in_range v = v = 0xFF00
 end
 
@@ -61,7 +92,7 @@ module Timer = struct
     | 0xFF04 -> { m with div  = 0 }
     | 0xFF05 -> { m with tima = v }
     | 0xFF06 -> { m with tma  = v }
-    | 0xFF07 -> { m with tac  = v }
+    | 0xFF07 -> { m with tac  = v land 0b111 }
     | 0xFF4D -> { m with key1 = (m.key1 land 0xFE) lor v }
     | _    -> assert false
 
@@ -76,7 +107,7 @@ module Timer = struct
     else
       { m with tima = res }, false
 
-  let tac_enabled m = m.tac land 0b100 = 0b100
+  let tac_enabled m = m.tac land 0b100 > 0
   let tima_mcyc m =
     match m.tac land 0b11 with
     | 0b00 -> 256
@@ -102,7 +133,9 @@ module Timer = struct
     let rec aux (m,i) =
       function
       | 0 -> m,i
-      | n -> aux (inc_tima m) (n - 1)
+      | n ->
+        let m,i' = inc_tima m in
+        aux (m, i || i') (n - 1)
     in
     match tac_enabled m with
     | false -> m, false
@@ -110,6 +143,11 @@ module Timer = struct
       let tima_c = m.tima_c + cycles in
       let cpt = tima_mcyc m in
       let ticks = tima_c / cpt in
+      (* Utils.print_hex "Tima c" m.tima_c;
+      Utils.print_hex "cycles" cycles;
+      Utils.print_dec "CPT" cpt;
+      Utils.print_dec "Ticks" ticks;
+      Utils.print_dec "new tima c" @@ tima_c mod cpt; *)
       let m, interrupted = aux (m, false) ticks in
       { m with tima_c = tima_c mod cpt }, interrupted
 
@@ -122,8 +160,8 @@ end
 module Interrupts = struct
   type t = int
   let initial = 0xE1
-  let get m _ = m
-  let set _ _ v = v land 0b11111
+  let get m _ = m lor 0xE0
+  let set _ _ v = v land 0x1F
   let request_joypad m = m lor 0b10000
   let request_serial m = m lor 0b01000
   let request_timer m  = m lor 0b00100

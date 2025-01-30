@@ -32,8 +32,8 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
         else
           ()
         in
-        let joypad = GBC.State.get_joypad st in
-        let st = GBC.State.set_joypad st @@ Input.set_joypad joypad in
+        let buttons, dpad = Input.set_joypad () in
+        let st = GBC.State.set_joypad st buttons dpad in
         (* Final state in this step *)
         let history = History.add_state history st frame_end in
         emulator_loop st history curr_time delta_time cpu_time texture renderer
@@ -65,16 +65,19 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
         in
         let st, history = if History.is_empty history then st, history else move_back history in
         Graphics.render_framebuffer texture renderer GBC.PPU.framebuffer;
+        GBC.print_instructions st;
         GBC.print_registers st;
         GBC.print_interrupts st;
         debugger_loop st history texture renderer
       | { forward = true;  _ } ->
         Input.dbg_input := { !Input.dbg_input with forward = false };
-        let joypad = GBC.State.get_joypad st in
-        let st = GBC.State.set_joypad st @@ Input.set_joypad joypad in
+        let buttons, dpad = Input.set_joypad () in
+        let st = GBC.State.set_joypad st buttons dpad  in
         let st, _, frame_end = GBC.cpu_step st in
-        let joypad = GBC.State.get_joypad st in
-        let st = GBC.State.set_joypad st @@ Input.set_joypad joypad in
+        let buttons, dpad = Input.set_joypad () in
+        let st = GBC.State.set_joypad st buttons dpad  in
+        GBC.print_registers st;
+        GBC.print_interrupts st;
         (* Final state in this step *)
         let history = History.add_state history st frame_end in
         debugger_loop st history texture renderer

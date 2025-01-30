@@ -119,7 +119,6 @@ module type S = sig
   (* Miscellaneous Instructions *)
   val iCCF : instruction
   val iCPL : instruction
-  (* May be wrong *)
   val iDAA : instruction
   val iDI : instruction
   val iEI : instruction
@@ -149,7 +148,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     let a, r = st.regs._A, State.get_r8 st r8 in
     let c = State.get_flag st Regs.Flag_c in
     let sum = a + r + c in let res = Utils.u8 sum in
-    State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+    let st = State.set_A st res in
+    State.set_flags st ~z:(res = 0) ~n:false
     ~h:(((a land 0xF) + (r land 0xF) + c) > 0xF) ~c:(sum > 0xFF) (),
     Next, 1
 
@@ -158,21 +158,24 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     let hlp = State.get_HLp st in
     let c = State.get_flag st Regs.Flag_c in
     let sum = a + hlp + c in let res = Utils.u8 sum in
-    State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+    let st = State.set_A st res in
+    State.set_flags st ~z:(res = 0) ~n:false
     ~h:((a land 0xF) + (hlp land 0xF) + c > 0xF) ~c:(sum > 0xFF) (),
     Next, 2
 
   let iADC_An8 n : instruction = fun st ->
     let a, c = st.regs._A, State.get_flag st Regs.Flag_c in
     let sum = a + n + c in let res = Utils.u8 sum in
-    State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+    let st = State.set_A st res in
+    State.set_flags st ~z:(res = 0) ~n:false
     ~h:((a land 0xF) + (n land 0xF) + c > 0xF) ~c:(sum > 0xFF) (),
     Next, 2
 
   let iADD_Ar8 r8 : instruction = fun st ->
     let a, r = st.regs._A, State.get_r8 st r8 in
     let sum = a + r in let res = Utils.u8 sum in
-    State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+    let st = State.set_A st res in
+    State.set_flags st ~z:(res = 0) ~n:false
     ~h:((a land 0xF) + (r land 0xF) > 0xF) ~c:(sum > 0xFF) (),
     Next, 1
 
@@ -180,14 +183,16 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     let a = st.regs._A in
     let hlp = State.get_HLp st in
     let sum = a + hlp in let res = Utils.u8 sum in
-    State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+    let st = State.set_A st res in
+    State.set_flags st ~z:(res = 0) ~n:false
     ~h:((a land 0xF) + (hlp land 0xF) > 0xF) ~c:(sum > 0xFF) (),
     Next, 2
 
   let iADD_An8 n : instruction = fun st ->
     let a = st.regs._A in
     let sum = a + n in let res = Utils.u8 sum in
-    State.set_flags (State.set_A st res) ~z:(res = 0) ~n:false
+    let st = State.set_A st res in
+    State.set_flags st ~z:(res = 0) ~n:false
     ~h:((a land 0xF) + (n land 0xF) > 0xF) ~c:(sum > 0xFF) (),
     Next, 2
 
@@ -210,7 +215,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Next, 2
 
   let iCP_Ar8 r : instruction = fun st ->
-    let a, y = st.regs._A, State.get_r8 st r in
+    let a, y = State.get_r8 st A, State.get_r8 st r in
     let result = a - y in
     State.set_flags st ~z:(result = 0) ~n:true
     ~h:(a land 0xF < y land 0xF) ~c:(y > a) (),
@@ -706,8 +711,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   let iPOP_AF : instruction = fun st ->
     let sp = State.get_SPp st in
-    State.set_flags (State.set_r16 (State.inc_SP st) AF sp) ~z:(sp land 0x80 > 0)
-    ~n:(sp land 0x40 > 0) ~h:(sp land 0x20 > 0) ~c:(sp land 0x10 > 0) (),
+    State.set_r16 (State.inc_SP st) AF sp,
     Next, 3
 
   let iPOP_r16 r : instruction = fun st ->
@@ -729,25 +733,31 @@ module Make (State : State.S) : (S with type state = State.t) = struct
     Next, 1
 
   let iCPL : instruction = fun st ->
-    State.set_A st (st.regs._A |> lnot),
+    State.set_A st @@ (lnot st.regs._A) land 0xFF,
     Next, 1
 
-  (* May be wrong *)
   let iDAA : instruction = fun st ->
     let n, h = State.get_flag st Flag_n, State.get_flag st Flag_h in
     let a, c = st.regs._A, State.get_flag st Flag_c in
     let a' =
       match n with
       | 0 ->
-        let x =
-          if c = 1 || a > 0x99 then a + 0x60 else a in
-          if h = 1 || (x land 0x0F) > 0x09 then x + 0x06 else x
+        let a =
+          if c = 1 || a > 0x99 then Utils.u8 (a + 0x60)  else a in
+          if h = 1 || a land 0x0F > 0x09 then a + 0x06 else a
       | 1 ->
-        let x =
-          if c = 1 then a - 0x60 else a in
-          if h = 1 then x - 0x06 else x
+        let a =
+          if c = 1 then
+            let res = a - 0x60 in if res < 0 then 0x100 + res else res
+          else
+            a
+          in
+          if h = 1 then
+            let res = a - 0x06 in if res < 0 then 0x100 + res else res
+          else
+            a
     in
-    State.set_flags (State.set_A st a') ~z:(a = 0) ~h:false
+    State.set_flags (State.set_A st a') ~z:(a' = 0) ~h:false
     ~c:(c = 1 || a > 0x99) (),
     Next, 1
 

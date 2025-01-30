@@ -5,7 +5,7 @@ type r16 = AF | BC | DE | HL | SP | PC
 type flag = Flag_z | Flag_n | Flag_h | Flag_c
 
 type flags = {
-  z : bool (* bit *); n : bool (* bit *); h : bool (* bit *); c : bool; (* bit *) low_nibble : int
+  z : bool (* bit *); n : bool (* bit *); h : bool (* bit *); c : bool; (* bit *)
 }
 
 type regfile = {
@@ -19,7 +19,7 @@ type regfile = {
 
 
 let initial_flags = {
-  z = true; n = false; h = false; c = false; low_nibble = 0
+  z = true; n = false; h = false; c = false
 }
 
 let initial_regfile = {
@@ -30,20 +30,19 @@ let initial_regfile = {
   flags = initial_flags
 }
 
-let flags_to_int {z;n;h;c;low_nibble} =
+let flags_to_int {z;n;h;c} =
   let seventh = if z then 0b10000000 else 0 in
   let sixth   = if n then 0b01000000 else 0 in
   let fifth   = if h then 0b00100000 else 0 in
   let fourth  = if c then 0b00010000 else 0 in
-  seventh lor sixth lor fifth lor fourth lor low_nibble
+  seventh lor sixth lor fifth lor fourth
 
 let int_to_flags v =
   let z = v land 0b10000000 > 0 in
   let n = v land 0b01000000 > 0 in
   let h = v land 0b00100000 > 0 in
   let c = v land 0b00010000 > 0 in
-  let low_nibble = v land 0x0F in
-  { z; n; h; c; low_nibble }
+  { z; n; h; c }
 
 
 let set_r8 rf r v =
@@ -105,11 +104,10 @@ let initial_regfile_cgb =
   (aux8 L 0x0D) |> (aux16 PC 0x100) |> (aux16 SP 0xFFFE)
 
 
-let print_flags {z;n;h;c;low_nibble} =
+let print_flags {z;n;h;c} =
   print_endline @@
     "z:" ^ (string_of_bool z) ^ " n:" ^ (string_of_bool n) ^
-    " h:" ^ (string_of_bool h) ^ " c:" ^ (string_of_bool c) ^
-    " low: " ^ (Printf.sprintf "0x%02X" low_nibble)
+    " h:" ^ (string_of_bool h) ^ " c:" ^ (string_of_bool c)
 
 
 let print_registers regs =

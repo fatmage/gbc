@@ -52,9 +52,9 @@ module Make (State : State.S) : (S with type state = State.t) = struct
       (* Utils.print_dec "=============================RENDERING====================================" ly; *)
       let scy, scx = st.gpu_mem.lcd_regs.scy, st.gpu_mem.lcd_regs.scx in
       let y = (scy + ly) mod bg_wh in
-      (* Utils.print_dec "Y" y;
-      Utils.print_dec "SCY" scy;
-      Utils.print_dec "LY" ly; *)
+      (* Utils.print_dec "Y" y; *)
+      (* Utils.print_dec "SCY" scy; *)
+      (* Utils.print_dec "LY" ly; *)
       let bg_tile_map_area = State.GPUmem.LCD_Regs.bg_tm_area st.gpu_mem.lcd_regs in
       let row_in_tile = y mod 8 in
       let lx = ref 0 in
@@ -98,7 +98,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           bgw_buffer.(!lx + i) <- (mk_pixel color palette 0 prio)
         done;
 
-        (* let _ = if ly = 50 then read_line () else "" in *)
+        (* let _ = if ly = 0x62 then read_line () else "" in *)
         lx := !lx + len
       done
     in

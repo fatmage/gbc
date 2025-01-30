@@ -94,28 +94,28 @@ module WRAM = struct
     match m,i with
     | {svbk; _}, 0xFF70 -> svbk
     | {b0; _}, i when Bank0.in_range i -> Bank0.get b0 i
-    | {bs=(b::_);_}, i -> Banks.get b i
-    | _    -> assert false
-
-  let rec rot (x::xs) =
-    function
-    | 0            -> x::xs
-    | i when i < 0 -> rot (xs @ [x]) (i + 1)
-    | i            -> rot (x::xs) (7 - i)
+    | {bs; svbk; _}, i ->
+      let bank = svbk land 0b111 in
+      if bank = 0 then
+        Banks.get (List.hd bs) i
+       else
+        Banks.get (List.nth bs (bank - 1)) i
 
   let set m i v =
     match m,i with
     | {b0;bs;svbk}, 0xFF70 ->
-      if v land 0b111 = svbk land 0b111 then
-        { m with svbk=v }
-      else
-        let diff = (svbk land 0b111) - (v land 0b111) in
-        { b0; bs = rot bs diff; svbk=v }
+      { m with svbk = 0xF8 lor v }
     | {b0;_}, i when Bank0.in_range i ->
       { m with b0 = Bank0.set b0 i v }
-    | {bs = b::bs; _}, i ->
-      { m with bs = Banks.set b i v :: bs }
-    | _    -> assert false
+    | {bs; svbk;_}, i ->
+      let bank = if svbk land 0b111 = 0 then 1 else svbk land 0b111 in
+      let aux j mem =
+        if j = (bank - 1) then
+          Banks.set mem i v
+        else
+          mem
+      in
+      { m with bs = List.mapi aux bs }
 
   let in_range i = Bank0.in_range i || Banks.in_range i || i = 0xFF70
 
@@ -124,6 +124,7 @@ module WRAM = struct
 end
 
 module HRAM = struct
-  module M = (val make_chunk 127 0xFF80)
+  module M = (val make_chunk 128 0xFF80)
   include M
+  let in_range i = 0xFF80 <= i && i <= 0xFFFE
 end

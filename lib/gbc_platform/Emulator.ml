@@ -23,10 +23,10 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
       print_endline "Entering debugger mode.";
       debugger_loop st history texture renderer
     else
-      (* let curr_time = Sys.time () in *)
-      (* let delta_time = (curr_time -. prev_time) +. delta_time in *)
-      if (* (delta_time > time_left) *) true then
-        (* let delta_time = delta_time -. time_left in *)
+      let curr_time = Sys.time () in
+      let delta_time = (curr_time -. prev_time) +. delta_time in
+      if delta_time > time_left then
+        let delta_time = delta_time -. time_left in
         let st, cpu_time, frame_end = GBC.cpu_step st in
         let _ = if frame_end then
           Graphics.render_framebuffer texture renderer GBC.PPU.framebuffer
@@ -37,9 +37,9 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
         let st = GBC.State.set_joypad st buttons dpad in
         (* Final state in this step *)
         let history = History.add_state history st frame_end in
-        emulator_loop st history (* curr_time delta_time cpu_time *) 0. 0. 0. texture renderer
+        emulator_loop st history curr_time delta_time cpu_time texture renderer
       else
-        emulator_loop st history (* curr_time delta_time time_left *) 0. 0. 0. texture renderer
+        emulator_loop st history curr_time delta_time time_left texture renderer
   and debugger_loop (st : state) (history : History.t) texture renderer =
     Input.handle_debugger_events ();
     if !Input.switch_mode then

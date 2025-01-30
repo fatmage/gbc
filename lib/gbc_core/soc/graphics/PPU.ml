@@ -155,7 +155,8 @@ module Make (State : State.S) : (S with type state = State.t) = struct
         begin
         if (lx + i) >= 0 && (lx + i) < screen_w then
           let color = (!p1 land 0b1) lor ((!p2 land 0b1) lsl 1) in
-          obj_buffer.(lx + i) <- (mk_pixel color palette obj_prio prio)
+          if color != 0 then
+            obj_buffer.(lx + i) <- (mk_pixel color palette obj_prio prio)
         end;
         p1 := !p1 lsr 1;
         p2 := !p2 lsr 1;

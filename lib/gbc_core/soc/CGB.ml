@@ -6,7 +6,7 @@ module type S = sig
 
   val cpu_step : State.t -> State.t * float * bool
 
-  val init_gb : bytes -> State.t
+  val init_gb : string -> State.t
 
   val print_instructions : State.t -> unit
   val print_registers : State.t -> unit

@@ -99,6 +99,7 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
         Input.dbg_input := { !Input.dbg_input with forward = false };
         let st, history = move_forward st history (not ctrl) in
         Graphics.render_framebuffer texture renderer GBC.PPU.framebuffer;
+        GBC.print_instructions st;
         GBC.print_registers st;
         GBC.print_interrupts st;
         debugger_loop st history texture renderer

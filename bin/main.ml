@@ -7,8 +7,9 @@ let () =
   let argv = Sys.argv in
   let _ = if Array.length argv < 2 then usage_exit () in
   let rom_ch = open_in_bin argv.(1) in
-  let rom = Bytes.create (in_channel_length rom_ch) in
-  really_input rom_ch rom 0 (in_channel_length rom_ch);
+  (* let rom = Bytes.create (in_channel_length rom_ch) in
+  really_input rom_ch rom 0 (in_channel_length rom_ch); *)
+  let rom = really_input_string rom_ch @@ in_channel_length rom_ch in
   let module Core = (val Gbc_core.GBC.gbc_module rom) in
   let gbc = Core.init_gb rom in
   let module GameBoyCaml = Gbc_platform.Emulator.Make(Core) in

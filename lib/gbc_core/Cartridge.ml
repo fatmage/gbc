@@ -1,7 +1,7 @@
 module type S = sig
   include Addressable.S
 
-  val load_rom : t -> bytes -> t
+  val load_rom : t -> string -> t
 
 end
 
@@ -21,14 +21,14 @@ type mbc =
 
 module No_RAM : S =
 struct
-  type t = bytes
-  let initial = Bytes.empty
+  type t = string
+  let initial = ""
 
   let in_rom i = 0x0000 <= i && i <= 0x7FFF
   let in_ram i = 0xA000 <= i && i <= 0xBFFF
   let get m i =
     if in_rom i then
-      Bytes.get m i |> Char.code
+      String.get m i |> Char.code
     else
       0xFF
   let set m _ _ = m
@@ -41,14 +41,14 @@ module With_RAM : S =
 struct
   module Bank = (val RAM.make_chunk 8192 0xA000)
 
-  type t = bytes * Bank.t
-  let initial = Bytes.empty, Bank.initial
+  type t = string * Bank.t
+  let initial = "", Bank.initial
   let in_rom i = 0x0000 <= i && i <= 0x7FFF
   let in_ram i = 0xA000 <= i && i <= 0xBFFF
 
   let get (rom, ram) i =
     if in_rom i then
-      Bytes.get rom i |> int_of_char
+      String.get rom i |> int_of_char
     else
       Bank.get ram i
 
@@ -69,8 +69,8 @@ let mbc1 rom_banks ram_banks : (module S) = (module struct
   module RAM = (val RAM.make_chunk (ram_banks * 8192) 0xA000)
 
   type banking_mode = M0 | M1
-  type t = { rom : bytes; ram: RAM.t; rom_bank : int; ram_bank : int; mode : banking_mode; ram_enabled : bool }
-  let initial = { rom = Bytes.empty; ram = RAM.initial; rom_bank = 0b00001; ram_bank = 0b00; mode = M0; ram_enabled = false }
+  type t = { rom : string; ram: RAM.t; rom_bank : int; ram_bank : int; mode : banking_mode; ram_enabled : bool }
+  let initial = { rom = ""; ram = RAM.initial; rom_bank = 0b00001; ram_bank = 0b00; mode = M0; ram_enabled = false }
 
   let in_low  i = 0x0000 <= i && i <= 0x3FFF
   let in_high i = 0x4000 <= i && i <= 0x7FFF
@@ -106,9 +106,9 @@ let mbc1 rom_banks ram_banks : (module S) = (module struct
   let get m i =
     match i with
     | _ when in_low i  ->
-      Bytes.get m.rom (addr_low m i) |> int_of_char
+      String.get m.rom (addr_low m i) |> int_of_char
     | _ when in_high i ->
-      Bytes.get m.rom (addr_high m i) |> int_of_char
+      String.get m.rom (addr_high m i) |> int_of_char
     | _ when m.ram_enabled ->
       RAM.get m.ram (ram_addr m i)
     | _ -> 0xFF
@@ -151,8 +151,8 @@ end)
 
 let mbc2 : (module S) = (module struct
 module RAM = (val RAM.make_chunk 512 0xA000)
-  type t = {rom : bytes; ram : RAM.t; rom_bank: int; ram_enabled : bool }
-  let initial = { rom = Bytes.empty; ram = RAM.initial; rom_bank = 1; ram_enabled = false }
+  type t = {rom : string; ram : RAM.t; rom_bank: int; ram_enabled : bool }
+  let initial = { rom = ""; ram = RAM.initial; rom_bank = 1; ram_enabled = false }
 
   let in_low  i = 0x0000 <= i && i <= 0x3FFF
   let in_high i = 0x4000 <= i && i <= 0x7FFF
@@ -163,9 +163,9 @@ module RAM = (val RAM.make_chunk 512 0xA000)
   let get m i =
     match i with
     | _ when in_low i ->
-      Bytes.get m.rom i |> int_of_char
+      String.get m.rom i |> int_of_char
     | _ when in_high i ->
-      Bytes.get m.rom (0x4000 * m.rom_bank + i - 0x4000) |> int_of_char
+      String.get m.rom (0x4000 * m.rom_bank + i - 0x4000) |> int_of_char
     | _ when m.ram_enabled ->
       RAM.get m.ram (0xA000 + (i land 0x1F))
     | _ ->
@@ -202,8 +202,8 @@ let mbc5 ram_banks : (module S) = (module struct
 
   module RAM = (val RAM.make_chunk (ram_banks * 8192) 0xA000)
 
-  type t = { rom : bytes; ram : RAM.t; rom_bank : int; ram_bank : int; ram_enabled : bool }
-  let initial = { rom = Bytes.empty; ram = RAM.initial; rom_bank = 1; ram_bank = 0; ram_enabled = false }
+  type t = { rom : string; ram : RAM.t; rom_bank : int; ram_bank : int; ram_enabled : bool }
+  let initial = { rom = ""; ram = RAM.initial; rom_bank = 1; ram_bank = 0; ram_enabled = false }
 
   let in_low  i = 0x0000 <= i && i <= 0x3FFF
   let in_high i = 0x4000 <= i && i <= 0x7FFF
@@ -222,9 +222,9 @@ let mbc5 ram_banks : (module S) = (module struct
   let get m i =
     match i with
     | _ when in_low i ->
-      Bytes.get m.rom i |> int_of_char
+      String.get m.rom i |> int_of_char
     | _ when in_high i ->
-      Bytes.get m.rom (addr_high m i) |> int_of_char
+      String.get m.rom (addr_high m i) |> int_of_char
     | _ (* when in_ram i *) ->
       if m.ram_enabled then RAM.get m.ram (addr_ram m i) else 0xFF
 

@@ -2,7 +2,7 @@ open Cartridge
 
 let gbc_module rom : (module CGB.S)=
   let mbc_type =
-    match Bytes.get rom 0x147 |> int_of_char with
+    match String.get rom 0x147 |> int_of_char with
     | 0x00               -> print_endline "ROM_ONLY"; ROM_ONLY
     | 0x01 | 0x02 | 0x03 -> print_endline "MBC1"; MBC1
     | 0x05 | 0x06        -> print_endline "MBC2"; MBC2
@@ -12,7 +12,7 @@ let gbc_module rom : (module CGB.S)=
     | v -> Utils.fail_value "Cartridge type not implemented" v
   in
   let rom_banks =
-    match Bytes.get rom 0x148 |> int_of_char with
+    match String.get rom 0x148 |> int_of_char with
     | 0x00 -> 2
     | 0x01 -> 4
     | 0x02 -> 8
@@ -25,7 +25,7 @@ let gbc_module rom : (module CGB.S)=
     | v -> Utils.fail_value "Invalid number of ROM banks" v
   in
   let ram_banks =
-    match Bytes.get rom 0x149 |> int_of_char with
+    match String.get rom 0x149 |> int_of_char with
     | 0x00 -> 0
     | 0x02 -> 1
     | 0x03 -> 4
@@ -34,13 +34,13 @@ let gbc_module rom : (module CGB.S)=
     | v -> Utils.fail_value "Invalid number of RAM banks" v
   in
   let cgb =
-    match Bytes.get rom 0x143 |> int_of_char with
+    match String.get rom 0x143 |> int_of_char with
     | v when (v land 0x80) > 0 -> true
     | _ -> false
   in
   let state_module : (module State.S) =
     match cgb, mbc_type with
-    (* | false, _ -> failwith "DMG compatibility mode currently unsupported." *)
+    | false, _ -> failwith "DMG compatibility mode currently unsupported."
     | _, ROM_ONLY -> (module State.Make(Cartridge.No_RAM)(GPUmem.CGB_memory))
     | _ , ROM_RAM -> (module State.Make(Cartridge.With_RAM)(GPUmem.CGB_memory))
     | _, MBC1     -> (module State.Make(val Cartridge.mbc1 rom_banks ram_banks)(GPUmem.CGB_memory))

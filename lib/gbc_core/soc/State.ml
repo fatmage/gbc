@@ -66,7 +66,7 @@ module type S = sig
   val joypad_diff : t -> int -> int -> bool
   val get_joypad : t -> int * int
   val set_joypad : t -> int -> int -> t
-  val load_rom : t -> bytes -> t
+  val load_rom : t -> string -> t
   val init_dmg : t -> t
   val init_cgb : t -> t
   val mc_to_time : t -> int -> float

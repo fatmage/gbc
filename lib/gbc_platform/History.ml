@@ -17,25 +17,26 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
   type input_entry =  { buttons : int; dpad : int; step : int }
   type input_history = input_entry list
   type entry = state * int * input_history
-  type t = entry list
+  type t = entry list * int
 
-  let empty = []
+  let empty = [], 0
 
-  let is_empty = List.is_empty
+  let is_empty (xs, n) = List.is_empty xs
 
   let add_state xs st vblank =
     match xs with
-    | []                     -> [(st, 0, [])]
-    | (pst, n, is) :: states ->
+    | [], 0                  -> [(st, 0, [])], 1
+    | (pst, n, is) :: states, l ->
       match vblank with
-      | true  -> (st, 0, []) :: xs
+      | true  -> ((st, 0, []) :: (pst, n, is) :: states), l + 1
       | false ->
         let buttons, dpad = GBC.State.get_joypad st in
         let jp_changed = GBC.State.joypad_diff pst buttons dpad in
         if jp_changed then
-          (pst, n + 1, { buttons; dpad; step = n } :: is) :: states
+          (pst, n + 1, { buttons; dpad; step = n } :: is) :: states, l
         else
-          (pst, n + 1, is) :: states
+          (pst, n + 1, is) :: states, l
+
 
   let rec replay st n is_old is_new i =
     match i with
@@ -54,40 +55,40 @@ module Make (GBC : Gbc_core.CGB.S) : (S with type state = GBC.State.t) = struct
 
   let move_back =
     function
-    | [(st, 0, is)] -> st, [(st, 0, is)]
-    | [(st, n, is)] ->
+    | [(st, 0, is)], l -> st, ([(st, 0, is)], l)
+    | [(st, n, is)], l ->
       let is_chrono = List.rev is in
       let st', new_is = replay st (n-1) is [] 0 in
-      st', [(st, n-1, new_is)]
-    | (st1, 0, is1) :: (st2, n2, is2) :: xs ->
+      st', ([(st, n-1, new_is)], l)
+    | (st1, 0, is1) :: (st2, n2, is2) :: xs, l ->
       let is2_chrono = List.rev is2 in
       let st, _ = replay st2 n2 is2 [] 0 in
-      st, (st2, n2, is2) :: xs
-    | (st1, n1, is1) :: (st2, n2, is2) :: xs ->
+      st, ((st2, n2, is2) :: xs, l - 1)
+    | (st1, n1, is1) :: (st2, n2, is2) :: xs, l ->
       let is2_chrono = List.rev is2 in
       let st1', _ = replay st2 (n2+1) is2 [] 0 in
       let is1_chrono = List.rev is1 in
       let st, new_is1 = replay st1 (n1-1) is1 [] 0 in
-      st, (st1, n1-1, new_is1) :: (st2, n2, is2) :: xs
+      st, ((st1, n1-1, new_is1) :: (st2, n2, is2) :: xs, l)
 
   let move_back_frame =
     function
-    | [st, n, is] | [(_, 0, _); (st, n, is)] -> st, [st, 0, []]
-    | (st1, 0, is1) :: (st2, n2, is2) :: (st3, n3, is3) :: xs ->
+    | [st, n, is], 1 | [(_, 0, _); (st, n, is)], 2 -> st, ([st, 0, []], 1)
+    | (st1, 0, is1) :: (st2, n2, is2) :: (st3, n3, is3) :: xs, l ->
       let is3_chrono = List.rev is3 in
       let _, _ = replay st3 (n3+1) is3 [] 0 in
-      st2, (st2, 0, []) :: (st3, n3, is3) :: xs
-    | (st1, n1, is1) :: (st2, n2, is2) :: xs ->
+      st2, ((st2, 0, []) :: (st3, n3, is3) :: xs, l - 1)
+    | (st1, n1, is1) :: (st2, n2, is2) :: xs, l ->
       let is2_chrono = List.rev is2 in
       let _, _ = replay st2 (n2+1) is2 [] 0 in
-      st1, (st1, 0, []) :: (st2, n2, is2) :: xs
+      st1, ((st1, 0, []) :: (st2, n2, is2) :: xs, l)
 
   let move_back_second history =
     let rec aux history i =
       match history, i with
-      | [(st,n,is)], _  -> st, [(st, 0, [])]
+      | ([(st,n,is)], l), _  -> st, ([(st, 0, [])], l)
       | history, 0      -> move_back_frame history
-      | _ :: history, i -> aux history (i-1)
+      | (_ :: history, l), i -> aux (history, l - 1) (i-1)
     in
     aux history 59
 

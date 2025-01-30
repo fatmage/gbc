@@ -285,13 +285,13 @@ module Make (State : State.S) : S = struct
     (* print_endline "========= FETCH_DECODE START =========";
     State.print_instructions st;
     State.print_registers st;
-    State.print_interrupts st; *)
-    (* Utils.print_hex "Joypad" @@ IOregs.Joypad.get st.joypad 0; *)
-    (* Utils.print_hex "LCDC" st.gpu_mem.lcd_regs.lcdc; *)
-    (* Utils.print_hex "STAT" st.gpu_mem.lcd_regs.stat; *)
+    State.print_interrupts st;
+    Utils.print_hex "Joypad" @@ IOregs.Joypad.get st.joypad 0;
+    Utils.print_hex "LCDC" st.gpu_mem.lcd_regs.lcdc;
+    Utils.print_hex "STAT" st.gpu_mem.lcd_regs.stat; *)
     (* Utils.print_hex "LY" st.gpu_mem.lcd_regs.ly; *)
     (* Utils.print_hex "LYC" st.gpu_mem.lcd_regs.lyc; *)
-    (* Utils.print_hex "FF80" @@ State.get_v8 st 0xFF80; *)
+    (* Utils.print_hex "FF80" @@ State.Bus.get st 0xFF80; *)
     (* Utils.print_hex "TIMA" st.timer.tima; *)
     (* Utils.print_hex "TAC" st.timer.tac; *)
     (* Utils.print_hex "DIV" st.timer.div; *)
@@ -300,6 +300,7 @@ module Make (State : State.S) : S = struct
     (* let _ = if st.regs._PC = 0xC33D && instr = 0xE6 then read_line () else "" in *)
     (* let _ = if st.regs._PC = 0x2Ec5 then read_line () else "" in *)
     (* let _ = if st.regs._A = 0x71 then read_line () else "" in *)
+    (* let _ = if st.regs._PC = 0x230 then read_line () else "" in *)
     (* let _ = if instr = 0xE6 && arg = 04 then read_line () else "" in *)
 
     match State.Bus.get8 st st.regs._PC with
@@ -651,8 +652,9 @@ module Make (State : State.S) : S = struct
           { st with timer }
       in
       (* dma *)
-      let st = DMA_OAM.exec_dma st mc in
-      let st = DMA_VRAM.exec_dma st mc in
+      let st, _ = DMA_OAM.exec_dma st mc in
+      let st, dma_cyc = DMA_VRAM.exec_dma st mc in
+      let mc = mc + dma_cyc in
       (* ppu *)
       let st, render = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
       st, State.mc_to_time st mc, render
@@ -671,9 +673,10 @@ module Make (State : State.S) : S = struct
           { st with timer }
       in
       (* dma  *)
-      let st = DMA_OAM.exec_dma st mc in
+      let st, _ = DMA_OAM.exec_dma st mc in
       (* hdma *)
-      let st = DMA_VRAM.exec_dma st mc in
+      let st, dma_mcyc = DMA_VRAM.exec_dma st mc in
+      let mc = mc + dma_mcyc in
       (* ppu  *)
       let st, render = PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st in
       st, State.mc_to_time st mc, render

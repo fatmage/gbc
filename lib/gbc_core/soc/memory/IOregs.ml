@@ -143,11 +143,6 @@ module Timer = struct
       let tima_c = m.tima_c + cycles in
       let cpt = tima_mcyc m in
       let ticks = tima_c / cpt in
-      (* Utils.print_hex "Tima c" m.tima_c;
-      Utils.print_hex "cycles" cycles;
-      Utils.print_dec "CPT" cpt;
-      Utils.print_dec "Ticks" ticks;
-      Utils.print_dec "new tima c" @@ tima_c mod cpt; *)
       let m, interrupted = aux (m, false) ticks in
       { m with tima_c = tima_c mod cpt }, interrupted
 

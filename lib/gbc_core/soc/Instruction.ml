@@ -785,13 +785,12 @@ module Make (State : State.S) : (S with type state = State.t) = struct
 
   (* Special case - STOP instruction https://gbdev.io/pandocs/Reducing_Power_Consumption.html#using-the-stop-instruction *)
 
-
   let iSTOP (state : State.t) : instruction * int =
     match 0x0F land IOregs.Joypad.get state.joypad 0 with
     | 0x0F ->
       begin match IOregs.Timer.switch_requested state.timer (* was a speed switch requested in key1 *) with
       | true ->
-        if State.interrupts_pending state > 0 then
+        if State.interrupts_pending state = 0 then
           (fun st -> ({ st with timer = IOregs.Timer.switch_speed (IOregs.Timer.reset_div st.timer) }, Next, 1)), 1
         else
           (fun st -> ({ st with activity = Halted 0x8000; timer = IOregs.Timer.switch_speed (IOregs.Timer.reset_div st.timer) }, Next, 1)), 2
@@ -800,6 +799,7 @@ module Make (State : State.S) : (S with type state = State.t) = struct
           if State.interrupts_pending state > 0 then 1 else 2
       end
     | _    ->
+      print_endline "joypad pressed";
       if State.interrupts_pending state > 0 then
         iNOP, 1
       else

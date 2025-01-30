@@ -9,7 +9,7 @@ let gbc_module rom : (module CGB.S)=
     | 0x08 | 0x09        -> print_endline "ROM_RAM"; ROM_RAM
     | 0x19 | 0x1A | 0x1B
     | 0x1C | 0x1D | 0x1E -> print_endline "MBC5"; MBC5
-    | _ -> failwith "Cartridge type not implemented."
+    | v -> Utils.fail_value "Cartridge type not implemented" v
   in
   let rom_banks =
     match Bytes.get rom 0x148 |> int_of_char with
@@ -22,7 +22,7 @@ let gbc_module rom : (module CGB.S)=
     | 0x06 -> 128
     | 0x07 -> 256
     | 0x08 -> 512
-    | _ -> failwith "Invalid number of ROM banks."
+    | v -> Utils.fail_value "Invalid number of ROM banks" v
   in
   let ram_banks =
     match Bytes.get rom 0x149 |> int_of_char with
@@ -31,7 +31,7 @@ let gbc_module rom : (module CGB.S)=
     | 0x03 -> 4
     | 0x04 -> 16
     | 0x05 -> 8
-    | _ -> failwith "Invalid number of RAM banks."
+    | v -> Utils.fail_value "Invalid number of RAM banks" v
   in
   let cgb =
     match Bytes.get rom 0x143 |> int_of_char with

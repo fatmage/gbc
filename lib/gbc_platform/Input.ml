@@ -126,9 +126,4 @@ let handle_debugger_events () =
     | _     -> ()
   done
 
-let set_joypad () =
-  (* print_endline "Joypad od emulatora"; *)
-  let b, d = bttn_to_int (), dpad_to_int () in
-  (* Printf.sprintf "Buttons: 0x%02X" b |> print_endline; *)
-  (* Printf.sprintf "Dpad: 0x%02X" d |> print_endline; *)
-  b, d
+let set_joypad () = bttn_to_int (), dpad_to_int ()

@@ -30,10 +30,8 @@ module type S = sig
 
   val set_r8 : t -> Regs.r8 -> int -> t
   val set_r16 : t -> Regs.r16 -> int -> t
-  val set_v8 : t -> int -> int -> t
   val get_r8 : t -> Regs.r8 -> int
   val get_r16 : t -> Regs.r16 -> int
-  val get_v8 : t -> int -> int
   val get_flag : t -> Regs.flag -> int
   val set_flag : t -> Regs.flag -> bool -> t
   val set_flags : t -> ?z:bool -> ?n:bool -> ?h:bool -> ?c:bool -> unit -> t
@@ -109,7 +107,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     let request_LCD st = if IE.enabled_LCD st.ie then { st with iflag = Interrupts.request_LCD st.iflag } else st
     let request_VBlank st = if IE.enabled_VBlank st.ie then { st with iflag = Interrupts.request_VBlank st.iflag } else st
 
-    let interrupts_pending st = (IE.get st.ie 0) land (Interrupts.get st.iflag 0)
+    let interrupts_pending st = (IE.get st.ie 0) land (Interrupts.get st.iflag 0) land 0x1F
 
     let inc_ly st = { st with gpu_mem = GPUmem.inc_ly st.gpu_mem }
     let reset_ly st = { st with gpu_mem = GPUmem.reset_ly st.gpu_mem }
@@ -143,7 +141,7 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     *)
 
     let get8 st addr =
-      let v = match addr with
+      match addr with
       | _ when Cartridge.in_range addr (* ROM + external RAM *)
         -> Cartridge.get st.cartridge addr
       | _ when GPUmem.in_range addr (* VRAM, OAM, LCD control, palettes *)
@@ -186,21 +184,10 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
         -> Utils.print_hex "Bus get warning: unusable memory" addr; 0xFF
       | _
         -> Utils.fail_addr "Bus get error: address out of range" addr
-      in
-      let _ =
-        if addr = 0xD61D then
-        let _ = print_endline "======== GETTING D61D ========" in
-        let _ = Utils.print_hex "Get value" v in
-        (* let _ = read_line () in *)
-        ()
-      else
-        ()
-    in
-      v
 
 
     let set8 st addr v =
-      let st =
+
       match addr with
       | _ when Cartridge.in_range addr (* ROM + external cartridge *)
         -> { st with cartridge = Cartridge.set st.cartridge addr v }
@@ -247,11 +234,8 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
         -> Utils.print_hex "Bus set warning: unusable memory" addr; st
       | _
         -> Utils.fail_addr "Bus set error: address out of range" addr
-      in
-      st
 
     let get16 st addr =
-      (* if addr = 0xFF69 then get8 st addr else (* That's maybe how palletes work *) *)
       let lo, hi = get8 st addr, get8 st (addr + 1) in
       (hi lsl 8) lor lo
 
@@ -273,11 +257,9 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
 
   let set_r8 st r v = { st with regs = Regs.set_r8 st.regs r v }
   let set_r16 st rr v = { st with regs = Regs.set_r16 st.regs rr v }
-  let set_v8 st addr v = Bus.set8 st addr v
 
   let get_r8 st r = Regs.get_r8 st.regs r
   let get_r16 st rr = Regs.get_r16 st.regs rr
-  let get_v8 st addr = Bus.get8 st addr
 
   let get_flag st f = Regs.get_flag st.regs f
   let set_flag st f v = { st with regs = Regs.set_flag st.regs f v }

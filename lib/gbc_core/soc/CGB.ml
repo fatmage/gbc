@@ -748,46 +748,33 @@ module Make (State : State.S) : S = struct
   let cpu_step (st : State.t) =
     match st.activity with
     | Running ->
-        (* interrupt or fetch decode execute *)
         let st, mc = fetch_decode_execute st in
-        (* timer *)
-        (* run div *)
         let st = { st with timer = IOregs.Timer.run_div st.timer mc } in
-        (* run tima *)
         let timer, if_requested = IOregs.Timer.run_tima st.timer mc in
         let st =
           if if_requested then
             { st with iflag = IOregs.Interrupts.request_timer st.iflag; timer }
           else { st with timer }
         in
-        (* dma *)
         let st, _ = DMA_OAM.exec_dma st mc in
         let st, dma_cyc = DMA_VRAM.exec_dma st mc in
         let mc = mc + dma_cyc in
-        (* ppu *)
         let st, render =
           PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st
         in
         (st, State.mc_to_time st mc, render)
     | Halted _ ->
-        (* check for interrupt *)
         let st, mc = poll_interrupts_halted st in
-        (* timer *)
-        (* run div *)
         let st = { st with timer = IOregs.Timer.run_div st.timer mc } in
-        (* run tima *)
         let timer, if_requested = IOregs.Timer.run_tima st.timer mc in
         let st =
           if if_requested then
             { st with iflag = IOregs.Interrupts.request_timer st.iflag; timer }
           else { st with timer }
         in
-        (* dma  *)
         let st, _ = DMA_OAM.exec_dma st mc in
-        (* hdma *)
         let st, dma_mcyc = DMA_VRAM.exec_dma st mc in
         let mc = mc + dma_mcyc in
-        (* ppu  *)
         let st, render =
           PPU.process_ppu st @@ PPU.dot_of_mc mc @@ State.get_speed st
         in

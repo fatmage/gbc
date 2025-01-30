@@ -1,8 +1,7 @@
 module type S = sig
-  (* Addressable *)
   type t
   val initial : t
-  val get : t -> int -> int (* u8 *)
-  val set : t -> int -> int (* u8 *) -> t
+  val get : t -> int -> int
+  val set : t -> int -> int -> t
   val in_range : int -> bool
 end

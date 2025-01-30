@@ -1,7 +1,6 @@
 module type S = sig
   (* Addressable *)
   type t
-
   val initial : t
   val get : t -> int -> int (* u8 *)
   val set : t -> int -> int (* u8 *) -> t

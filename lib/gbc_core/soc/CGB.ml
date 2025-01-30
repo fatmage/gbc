@@ -279,26 +279,6 @@ module Make (State : State.S) : S = struct
     | _ -> Instruction.iNOP
 
   let fetch_decode (st : State.t) : Instruction.instruction * int =
-    (* print_endline "========= FETCH_DECODE START =========";
-       State.print_instructions st;
-       State.print_registers st;
-       State.print_interrupts st;
-       Utils.print_hex "Joypad" @@ IOregs.Joypad.get st.joypad 0;
-       Utils.print_hex "LCDC" st.gpu_mem.lcd_regs.lcdc;
-       Utils.print_hex "STAT" st.gpu_mem.lcd_regs.stat; *)
-    (* Utils.print_hex "LY" st.gpu_mem.lcd_regs.ly; *)
-    (* Utils.print_hex "LYC" st.gpu_mem.lcd_regs.lyc; *)
-    (* Utils.print_hex "FF80" @@ State.Bus.get st 0xFF80; *)
-    (* Utils.print_hex "TIMA" st.timer.tima; *)
-    (* Utils.print_hex "TAC" st.timer.tac; *)
-    (* Utils.print_hex "DIV" st.timer.div; *)
-    (* let instr = State.Bus.get8 st st.regs._PC in
-       let arg   = State.Bus.get8 st @@ st.regs._PC + 1 in *)
-    (* let _ = if st.regs._PC = 0xC33D && instr = 0xE6 then read_line () else "" in *)
-    (* let _ = if st.regs._PC = 0x2Ec5 then read_line () else "" in *)
-    (* let _ = if st.regs._A = 0x71 then read_line () else "" in *)
-    (* let _ = if st.regs._PC = 0x230 then read_line () else "" in *)
-    (* let _ = if instr = 0xE6 && arg = 04 then read_line () else "" in *)
     match State.Bus.get8 st st.regs._PC with
     | 0x00 -> (Instruction.iNOP, 1)
     | 0x01 ->

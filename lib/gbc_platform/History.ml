@@ -25,7 +25,7 @@ module Make (GBC : Gbc_core.CGB.S) : S with type state = GBC.State.t = struct
     | [], 0 -> ([ (st, 0, []) ], 1)
     | (pst, n, is) :: states, l -> (
         match vblank with
-        | true -> ((st, 0, []) :: (pst, n, is) :: states, l + 1)
+        | true -> print_endline @@ string_of_int (l+1);((st, 0, []) :: (pst, n, is) :: states, l + 1)
         | false ->
             let buttons, dpad = GBC.State.get_joypad st in
             let jp_changed = GBC.State.joypad_diff pst buttons dpad in
@@ -101,4 +101,22 @@ struct
 
   let move_back_frame = move_back
   let move_back_second = move_back
+end
+
+module MakeNone (GBC : Gbc_core.CGB.S) : S with type state = GBC.State.t =
+struct
+  type state = GBC.State.t
+  type t = state list
+  let cnt = ref 0
+
+  let empty = []
+  let is_empty = List.is_empty
+  let add_state xs _ vblank =
+    if vblank then begin cnt := !cnt + 1; print_endline @@ string_of_int !cnt end;
+    xs
+
+  let move_back _ = GBC.State.initial, []
+  let move_back_frame = move_back
+  let move_back_second = move_back
+
 end

@@ -26,7 +26,6 @@ module Make (GBC : Gbc_core.CGB.S) : S with type state = GBC.State.t = struct
 
   let rec emulator_loop (st : state) (history : History.t) prev_time delta_time
       time_left texture renderer =
-    Input.handle_emulator_events ();
     if !Input.switch_mode then (
       let _ = Input.switch_mode := false in
       (* switch to debugger mode *)
@@ -40,7 +39,10 @@ module Make (GBC : Gbc_core.CGB.S) : S with type state = GBC.State.t = struct
         let st, cpu_time, frame_end = GBC.cpu_step st in
         let _ =
           if frame_end then
+            begin
+            Input.handle_emulator_events ();
             Graphics.render_framebuffer texture renderer GBC.PPU.framebuffer
+            end
           else ()
         in
         let buttons, dpad = Input.set_joypad () in

@@ -20,26 +20,64 @@ module Make (GBC : Gbc_core.CGB.S) : S with type state = GBC.State.t = struct
   let empty = ([], 0)
   let is_empty (_, n) = n = 0
 
+  let mapfst_append f xs ys =
+    let rec aux xs ys acc =
+      match (xs, ys) with
+      | [], [] -> List.rev acc
+      | x :: xs, ys -> aux xs ys (f x :: acc)
+      | [], y :: ys -> aux [] ys (y :: acc)
+    in
+    aux xs ys []
+
   let add_state xs st vblank =
-    match xs with
-    | [], 0 -> ([ (st, 0, []) ], 1)
-    | (pst, n, is) :: states, l -> (
-        match vblank with
-        | true -> ((st, 0, []) :: (pst, n, is) :: states, l + 1)
-        | false -> (
-            match is with
-            | [] ->
-                let buttons, dpad = GBC.State.get_joypad st in
-                let jp_changed = GBC.State.joypad_diff pst buttons dpad in
-                if jp_changed then
-                  ((pst, n + 1, { buttons; dpad; step = n } :: is) :: states, l)
-                else ((pst, n + 1, is) :: states, l)
-            | { buttons; dpad; _ } :: xs ->
-                let jp_changed = GBC.State.joypad_diff st buttons dpad in
-                if jp_changed then
+    let history, length =
+      match xs with
+      | [], 0 -> ([ (st, 0, []) ], 1)
+      | (pst, n, is) :: states, l -> (
+          match vblank with
+          | true -> ((st, 0, []) :: (pst, n, is) :: states, l + 1)
+          | false -> (
+              match is with
+              | [] ->
                   let buttons, dpad = GBC.State.get_joypad st in
-                  ((pst, n + 1, { buttons; dpad; step = n } :: is) :: states, l)
-                else ((pst, n + 1, is) :: states, l)))
+                  let jp_changed = GBC.State.joypad_diff pst buttons dpad in
+                  if jp_changed then
+                    ( (pst, n + 1, { buttons; dpad; step = n } :: is) :: states,
+                      l )
+                  else ((pst, n + 1, is) :: states, l)
+              | { buttons; dpad; _ } :: xs ->
+                  let jp_changed = GBC.State.joypad_diff st buttons dpad in
+                  if jp_changed then
+                    let buttons, dpad = GBC.State.get_joypad st in
+                    ( (pst, n + 1, { buttons; dpad; step = n } :: is) :: states,
+                      l )
+                  else ((pst, n + 1, is) :: states, l)))
+    in
+    match length with
+    | 36000 ->
+        let rec coalesce history acc =
+          match history with
+          | (st1, n1, is1)
+            :: (st2, n2, is2)
+            :: (st3, n3, is3)
+            :: (st4, n4, is4)
+            :: history ->
+              let update_inputs offset { buttons; dpad; step } =
+                { buttons; dpad; step = step + offset }
+              in
+              let is' = mapfst_append (update_inputs @@ (n4 + 1)) is3 is4 in
+              let is' =
+                mapfst_append (update_inputs @@ (n4 + n3 + 2)) is2 is'
+              in
+              let is' =
+                mapfst_append (update_inputs @@ (n4 + n3 + n2 + 3)) is1 is'
+              in
+              let new_entry = (st4, n4 + n3 + n2 + n1, is') in
+              coalesce history @@ (new_entry :: acc)
+          | _ -> (List.rev acc, 9000)
+        in
+        coalesce history []
+    | _ -> (history, length)
 
   let rec replay st n is_old is_new i =
     match i with

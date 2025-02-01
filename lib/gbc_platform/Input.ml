@@ -68,28 +68,36 @@ let release_button = function
 let switch_button = function
   | Start ->
       gbc_input := { !gbc_input with start = not !gbc_input.start };
-      print_endline "start switch"
+      if !gbc_input.start then print_endline "Switch button pressed."
+      else print_endline "Switch button released."
   | Select ->
       gbc_input := { !gbc_input with select = not !gbc_input.select };
-      print_endline "select switch"
+      if !gbc_input.select then print_endline "Select button pressed."
+      else print_endline "Select button released."
   | B ->
       gbc_input := { !gbc_input with b = not !gbc_input.b };
-      print_endline "b switch"
+      if !gbc_input.b then print_endline "B button pressed."
+      else print_endline "B button released."
   | A ->
       gbc_input := { !gbc_input with a = not !gbc_input.a };
-      print_endline "a switch"
+      if !gbc_input.a then print_endline "A button pressed."
+      else print_endline "A button released."
   | Down ->
       gbc_input := { !gbc_input with down = not !gbc_input.down };
-      print_endline "down switch"
+      if !gbc_input.down then print_endline "Down button pressed."
+      else print_endline "Down button released."
   | Up ->
       gbc_input := { !gbc_input with up = not !gbc_input.up };
-      print_endline "up switch"
+      if !gbc_input.up then print_endline "Up button pressed."
+      else print_endline "Up button released."
   | Left ->
       gbc_input := { !gbc_input with left = not !gbc_input.left };
-      print_endline "left switch"
+      if !gbc_input.left then print_endline "Left button pressed."
+      else print_endline "Left button released."
   | Right ->
       gbc_input := { !gbc_input with right = not !gbc_input.right };
-      print_endline "right switch"
+      if !gbc_input.right then print_endline "Right button pressed."
+      else print_endline "Right button released."
 
 let handle_emulator_events () =
   let event = Sdl.Event.create () in

@@ -125,9 +125,9 @@ let print_flags { z; n; h; c } =
   ^ string_of_bool h ^ " c:" ^ string_of_bool c
 
 let print_registers regs =
-  Utils.print_hex "AF" @@ get_r16 regs AF;
-  Utils.print_hex "BC" @@ get_r16 regs BC;
-  Utils.print_hex "DE" @@ get_r16 regs DE;
-  Utils.print_hex "HL" @@ get_r16 regs HL;
-  Utils.print_hex "SP" @@ get_r16 regs SP;
-  Utils.print_hex "PC" @@ get_r16 regs PC
+  Utils.print_hex16 "AF" @@ get_r16 regs AF;
+  Utils.print_hex16 "BC" @@ get_r16 regs BC;
+  Utils.print_hex16 "DE" @@ get_r16 regs DE;
+  Utils.print_hex16 "HL" @@ get_r16 regs HL;
+  Utils.print_hex16 "SP" @@ get_r16 regs SP;
+  Utils.print_hex16 "PC" @@ get_r16 regs PC

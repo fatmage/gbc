@@ -354,16 +354,16 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
   let mc_to_time st mc = float_of_int mc *. Timer.tmul st.timer
 
   let print_instructions st =
-    Utils.print_hex "3 next values at PC" st.regs._PC;
-    Utils.value_hex (Bus.get8 st st.regs._PC);
-    Utils.value_hex (Bus.get8 st (st.regs._PC + 1));
-    Utils.value_hex (Bus.get8 st (st.regs._PC + 2))
+    Utils.print_hex16 "3 next values at PC" st.regs._PC;
+    Utils.value_hex8 (Bus.get8 st st.regs._PC);
+    Utils.value_hex8 (Bus.get8 st (st.regs._PC + 1));
+    Utils.value_hex8 (Bus.get8 st (st.regs._PC + 2))
 
   let print_registers st =
     print_endline "Registers:";
     Regs.print_registers st.regs;
-    Utils.print_hex "Value at HL" @@ get_HLp st;
-    if st.regs._SP != 0xFFFF then Utils.print_hex "Value at SP" @@ get_SPp st
+    Utils.print_hex8 "Value at HL" @@ get_HLp st;
+    if st.regs._SP != 0xFFFF then Utils.print_hex16 "Value at SP" @@ get_SPp st
 
   let print_interrupts st =
     print_endline "Interrupts";
@@ -373,8 +373,8 @@ module Make (M1 : Cartridge.S) (M2 : GPUmem.S) : S = struct
     | Disabled -> "Disabled"
     | Enabled -> "Enabled"
     | Enabling -> "Enabling");
-    Utils.print_hex "Iflag" st.iflag;
-    Utils.print_hex "IE" st.ie
+    Utils.print_hex8 "Iflag" st.iflag;
+    Utils.print_hex8 "IE" st.ie
 
   let print_palettes st = GPUmem.Palettes.print_palettes st.gpu_mem.palettes
 end

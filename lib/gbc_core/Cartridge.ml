@@ -48,7 +48,7 @@ end
 
 let mbc1 rom_banks ram_banks : (module S) =
   (module struct
-    module RAM = (val RAM.make_chunk (ram_banks * 8192) 0xA000)
+    module RAM = (val RAM.make_chunk 8192 0xA000)
 
     type banking_mode = M0 | M1
 
@@ -191,7 +191,9 @@ let mbc2 : (module S) =
 
 let mbc5 ram_banks : (module S) =
   (module struct
-    module RAM = (val RAM.make_chunk (ram_banks * 8192) 0xA000)
+    Utils.print_dec "ram banks" ram_banks
+
+    module RAM = (val RAM.make_chunk 8192 0xA000)
 
     type t = {
       rom : string;
@@ -242,6 +244,7 @@ let mbc5 ram_banks : (module S) =
           { m with rom_bank = m.rom_bank land 0xFF lor (v land (0b1 lsl 8)) }
       | _ when 0x4000 <= i && i <= 0x5FFF -> { m with ram_bank = v land 0x0F }
       | _ when in_ram i -> { m with ram = RAM.set m.ram (addr_ram m i) v }
+      | _ -> m
 
     let load_rom m rom = { m with rom }
     let in_range i = in_rom i || in_ram i

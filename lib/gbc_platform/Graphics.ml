@@ -2,10 +2,9 @@ open Tsdl
 
 let gbc_w = 160
 let gbc_h = 144
-let scale = 4.
+let scale = 5.
 let scaled_gbc_w = Float.(of_int gbc_w *. scale |> to_int)
 let scaled_gbc_h = Float.(of_int gbc_h *. scale |> to_int)
-let sec_per_frame = 1. /. 60.
 
 let or_exit = function
   | Error (`Msg e) ->

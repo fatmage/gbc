@@ -10,7 +10,7 @@ module type S = sig
     History.t ->
     float ->
     float ->
-    float ->
+    bool ->
     Tsdl.Sdl.texture ->
     Tsdl.Sdl.renderer ->
     unit
@@ -24,8 +24,10 @@ module Make (GBC : Gbc_core.CGB.S) : S with type state = GBC.State.t = struct
 
   module History = History.Make (GBC)
 
+  let sec_per_frame = 1. /. 60.
+
   let rec emulator_loop (st : state) (history : History.t) prev_time delta_time
-      time_left texture renderer =
+      frame_end texture renderer =
     if !Input.switch_mode then (
       let _ = Input.switch_mode := false in
       (* switch to debugger mode *)
@@ -34,24 +36,27 @@ module Make (GBC : Gbc_core.CGB.S) : S with type state = GBC.State.t = struct
     else
       let curr_time = Sys.time () in
       let delta_time = curr_time -. prev_time +. delta_time in
-      if delta_time > time_left then
-        let delta_time = delta_time -. time_left in
-        let st, cpu_time, frame_end = GBC.cpu_step st in
-        let _ =
-          if frame_end then
-            begin
-            Input.handle_emulator_events ();
-            Graphics.render_framebuffer texture renderer GBC.PPU.framebuffer
-            end
-          else ()
-        in
+      let st, frame_end =
+        if not frame_end then
+          let st, _, frame_end = GBC.cpu_step st in
+          (st, frame_end)
+        else (st, frame_end)
+      in
+      if frame_end && delta_time > sec_per_frame then (
+        Graphics.render_framebuffer texture renderer GBC.PPU.framebuffer;
+        let _ = Input.handle_emulator_events () in
         let buttons, dpad = Input.set_joypad () in
         let st = GBC.State.set_joypad st buttons dpad in
-        (* Final state in this step *)
         let history = History.add_state history st frame_end in
-        emulator_loop st history curr_time delta_time cpu_time texture renderer
+        emulator_loop st history curr_time
+          (delta_time -. sec_per_frame)
+          false texture renderer)
       else
-        emulator_loop st history curr_time delta_time time_left texture renderer
+        let history =
+          if not frame_end then History.add_state history st frame_end
+          else history
+        in
+        emulator_loop st history curr_time delta_time frame_end texture renderer
 
   and debugger_loop (st : state) (history : History.t) texture renderer =
     Input.handle_debugger_events ();
@@ -60,7 +65,7 @@ module Make (GBC : Gbc_core.CGB.S) : S with type state = GBC.State.t = struct
       (* switch to emulator mode *)
       let time = Sys.time () in
       print_endline "Entering emulator mode";
-      emulator_loop st history time 0. 0. texture renderer)
+      emulator_loop st history time 0. false texture renderer)
     else
       let rec move_forward st history = function
         | false ->

@@ -102,8 +102,8 @@ let handle_emulator_events () =
         | `W -> press_button Up
         | `A -> press_button Left
         | `D -> press_button Right
-        | `K -> press_button B
-        | `L -> press_button A
+        | `L -> press_button B
+        | `Semicolon -> press_button A
         | `Return -> press_button Start
         | `Lshift -> press_button Select
         | `Escape -> exit 0
@@ -116,8 +116,8 @@ let handle_emulator_events () =
         | `W -> release_button Up
         | `A -> release_button Left
         | `D -> release_button Right
-        | `K -> release_button B
-        | `L -> release_button A
+        | `L -> release_button B
+        | `Semicolon -> release_button A
         | `Return -> release_button Start
         | `Lshift -> release_button Select
         | _ -> ())
@@ -146,8 +146,8 @@ let handle_debugger_events () =
         | `W -> switch_button Up
         | `A -> switch_button Left
         | `D -> switch_button Right
-        | `K -> switch_button B
-        | `L -> switch_button A
+        | `L -> switch_button B
+        | `Semicolon -> switch_button A
         | `Return -> switch_button Start
         | `Lshift -> switch_button Select
         | `Lctrl -> dbg_input := { !dbg_input with ctrl = false }

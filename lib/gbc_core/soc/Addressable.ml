@@ -1,5 +1,6 @@
 module type S = sig
   type t
+
   val initial : t
   val get : t -> int -> int
   val set : t -> int -> int -> t

@@ -13,5 +13,5 @@ let () =
   let renderer = Gbc_platform.Graphics.init_graphics () in
   let texture = Gbc_platform.Graphics.create_texture renderer in
   Gbc_platform.Graphics.render_framebuffer texture renderer Core.PPU.framebuffer;
-  GameBoyCaml.emulator_loop gbc GameBoyCaml.History.empty (Sys.time ()) 0. 0. texture renderer
-  (* GameBoyCaml.debugger_loop gbc GameBoyCaml.History.empty texture renderer *)
+  (* GameBoyCaml.emulator_loop gbc GameBoyCaml.History.empty (Sys.time ()) 0. false texture renderer *)
+  GameBoyCaml.debugger_loop gbc GameBoyCaml.History.empty texture renderer

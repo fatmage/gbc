@@ -273,7 +273,7 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let x = State.get_r8 st r in
     let dec = x - 1 in
-    let res = if dec < 0 then 0xFF else dec in
+    let res = Utils.u8 dec in
     ( State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:true
         ~h:(x land 0x0F = 0x0)
         (),
@@ -284,7 +284,7 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let hlp = State.get_HLp st in
     let dec = hlp - 1 in
-    let res = if dec < 0 then 0xFF else dec in
+    let res = Utils.u8 dec in
     ( State.set_flags
         (State.Bus.set8 st (State.get_HL st) res)
         ~z:(res = 0) ~n:true
@@ -297,7 +297,7 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let x = State.get_r8 st r in
     let inc = x + 1 in
-    let res = if inc > 0xFF then 0 else inc in
+    let res = Utils.u8 inc in
     ( State.set_flags (State.set_r8 st r res) ~z:(res = 0) ~n:false
         ~h:(x land 0x0F = 0x0F)
         (),
@@ -308,7 +308,7 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let hlp = State.get_HLp st in
     let inc = hlp + 1 in
-    let res = if inc > 0xFF then 0 else inc in
+    let res = Utils.u8 inc in
     ( State.set_flags
         (State.Bus.set8 st (State.get_HL st) res)
         ~z:(res = 0) ~n:false
@@ -345,7 +345,7 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let a, x, c = (st.regs._A, State.get_r8 st r, State.get_flag st Flag_c) in
     let sub = a - x - c in
-    let res = if sub < 0 then 0x100 + sub else sub in
+    let res = Utils.u8 sub in
     ( State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
         ~h:(a land 0xF < (x land 0xF) + c)
         ~c:(sub < 0) (),
@@ -356,7 +356,7 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let a, hlp, c = (st.regs._A, State.get_HLp st, State.get_flag st Flag_c) in
     let sub = a - hlp - c in
-    let res = if sub < 0 then 0x100 + sub else sub in
+    let res = Utils.u8 sub in
     ( State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
         ~h:(a land 0xF < (hlp land 0xF) + c)
         ~c:(sub < 0) (),
@@ -367,7 +367,7 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let a, c = (st.regs._A, State.get_flag st Flag_c) in
     let sub = a - n - c in
-    let res = if sub < 0 then 0x100 + sub else sub in
+    let res = Utils.u8 sub in
     ( State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
         ~h:(a land 0xF < (n land 0xF) + c)
         ~c:(sub < 0) (),
@@ -378,7 +378,7 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let a, x = (st.regs._A, State.get_r8 st r) in
     let sub = a - x in
-    let res = if sub < 0 then 0x100 + sub else sub in
+    let res = Utils.u8 sub in
     ( State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
         ~h:(a land 0xF < x land 0xF)
         ~c:(sub < 0) (),
@@ -389,7 +389,7 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let a, hlp = (st.regs._A, State.get_HLp st) in
     let sub = a - hlp in
-    let res = if sub < 0 then 0x100 + sub else sub in
+    let res = Utils.u8 sub in
     ( State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
         ~h:(a land 0xF < hlp land 0xF)
         ~c:(sub < 0) (),
@@ -400,7 +400,7 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let a = st.regs._A in
     let sub = a - n in
-    let res = if sub < 0 then 0x100 + sub else sub in
+    let res = Utils.u8 sub in
     ( State.set_flags (State.set_A st res) ~z:(res = 0) ~n:true
         ~h:(a land 0xF < n land 0xF)
         ~c:(sub < 0) (),
@@ -447,14 +447,14 @@ module Make (State : State.S) : S with type state = State.t = struct
    fun st ->
     let x = State.get_r16 st r in
     let dec = x - 1 in
-    let res = if dec < 0 then 0xFFFF else dec in
+    let res = Utils.u16 dec in
     (State.set_r16 st r res, Next, 2)
 
   let iINC_r16 r : instruction =
    fun st ->
     let x = State.get_r16 st r in
     let inc = x + 1 in
-    let res = if inc > 0xFFFF then 0 else inc in
+    let res = Utils.u16 inc in
     (State.set_r16 st r res, Next, 2)
 
   (* Bit Operations Instructions *)
